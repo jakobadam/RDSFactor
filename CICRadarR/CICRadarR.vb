@@ -50,11 +50,10 @@ Public Class CICRadarR
         UserAccessLog.filePath = ApplicationPath() & "\UserAccessLog.txt"
 
         Log.WriteLog("---------------------------------------------------------------------------------------------------")
-        Log.WriteLog(Now & ":" & "Starting Service")
-
-        Log.WriteLog(Now & ":" & "Loading Configuration...")
+        ServerLog("Starting Service")
+        ServerLog("Loading Configuration...")
         Call loadConfiguration()
-        Log.WriteLog(Now & ":" & "Starting Radius listner ports...")
+        ServerLog("Starting Radius listner ports...")
         Call StartUpServer()
     End Sub
 
@@ -62,23 +61,21 @@ Public Class CICRadarR
         Log.filePath = ApplicationPath() & "\log.txt"
         UserAccessLog.filePath = ApplicationPath() & "\UserAccessLog.txt"
 
-        Log.WriteLog("---------------------------------------------------------------------------------------------------")
-        Log.WriteLog(Now & ":" & "Starting Service")
-
-        Log.WriteLog(Now & ":" & "Loading Configuration...")
+        ServerLog("---------------------------------------------------------------------------------------------------")
+        ServerLog("Starting Service")
+        ServerLog("Loading Configuration...")
         Call loadConfiguration()
-        Log.WriteLog(Now & ":" & "Starting Radius listner ports...")
+        ServerLog("Starting Radius listner ports...")
         Call StartUpServer()
     End Sub
 
     Protected Overrides Sub OnStop()
-        Log.WriteLog(Now & ":" & "Stopping Radius listner ports...")
+        ServerLog("Stopping Radius listner ports...")
 
     End Sub
 
     Public Sub OnStopTest()
-        Log.WriteLog(Now & ":" & "Stopping Radius listner ports...")
-
+        ServerLog("Stopping Radius listner ports...")
     End Sub
 
     Public Sub StartUpServer()
@@ -89,31 +86,26 @@ Public Class CICRadarR
         ' Populate from DB, I suppose ...
 
         For Each cl As DictionaryEntry In clientHash
-            Log.WriteLog(Now & ":" & "Adding Shared Secret to Radius Server")
+            ServerLog("Adding Shared Secret to Radius Server")
             secrets.AddSharedSecret(cl.Key, cl.Value)
         Next
         ' Then, we just create a RADIUS server ...
         Try
-            Log.WriteLog(Now & ":" & "Starting Radius Server on Port 1812...")
+            ServerLog("Starting Radius Server on Port 1812...")
             radius1812 = New RADIUSServer(1812, AddressOf ProcessPacket1812, secrets)
-            Log.WriteLog(Now & ":" & "Starting Radius Server on Port 1812...OK")
+            ServerLog("Starting Radius Server on Port 1812...OK")
         Catch
-            Log.WriteLog(Now & ":" & "Starting Radius Server on Port 1812...FAILED")
+            ServerLog("Starting Radius Server on Port 1812...FAILED")
 
         End Try
 
         Try
-            Log.WriteLog(Now & ":" & "Starting Radius Server on Port 1645...")
+            ServerLog("Starting Radius Server on Port 1645...")
             radius1645 = New RADIUSServer(1645, AddressOf ProcessPacket1645, secrets)
-            Log.WriteLog(Now & ":" & "Starting Radius Server on Port 1645...OK")
+            ServerLog("Starting Radius Server on Port 1645...OK")
         Catch
-            Log.WriteLog(Now & ":" & "Starting Radius Server on Port 1645...FAILED")
-
+            ServerLog("Starting Radius Server on Port 1645...FAILED")
         End Try
-
-
-     
-
 
     End Sub
 
@@ -135,25 +127,8 @@ Public Class CICRadarR
         End If
     End Sub
 
-    Private Sub RadiusAccept(ByVal server As RADIUSServer,
-                             ByVal packet As RADIUSPacket,
-                             ByVal attributes As RADIUSAttributes
-                             )
-        AccessLog("Radius Accept")
-        server.SendAsResponse( _
-                           New RADIUSPacket(RadiusPacketCode.AccessAccept, _
-                                            packet.Identifier, attributes, _
-                                            packet.EndPoint), _
-                           packet.Authenticator)
-    End Sub
-
-    Private Sub RadiusReject(ByVal server As RADIUSServer, ByVal packet As RADIUSPacket, ByVal attributes As RADIUSAttributes)
-        AccessLog("Radius Reject")
-        server.SendAsResponse( _
-                            New RADIUSPacket(RadiusPacketCode.AccessReject, _
-                                             packet.Identifier, attributes, _
-                                             packet.EndPoint), _
-                            packet.Authenticator)
+    Private Sub ServerLog(ByVal message)
+        Log.WriteLog(Now & ":" & message)
     End Sub
 
     Private Sub ProcessPacket(ByVal server As RADIUSServer, ByVal packet As RADIUSPacket)
@@ -230,11 +205,10 @@ Public Class CICRadarR
 
         If LaunchApp = "LAUNCH" Then
             Dim sRadiusSessionId = packet.UserPassword
-            Dim attributes As New RADIUSAttributes
             Dim SessionId_Ok As Boolean = False
             Dim sUserName As String = username.GetString.ToLower
 
-            AccessLog("RDWeb app launch: Checking token validity for user: " & sUserName)
+            AccessLog("RDWeb app launch: Checking token validity of user: " & sUserName)
 
             If TSGWSessionIdHash.Contains(sUserName) And TSGWSessionIdTimeStampHash.Contains(sUserName) Then
                 Dim hashTime As DateTime = DirectCast(TSGWSessionIdTimeStampHash(sUserName), DateTime)
@@ -253,10 +227,10 @@ Public Class CICRadarR
 
             End If
 
-            If SessionId_Ok Then ' found match in hash table' Return ok
-                RadiusAccept(server, packet, attributes)
+            If SessionId_Ok Then
+                packet.AcceptAccessRequest()
             Else
-                RadiusReject(server, packet, attributes)
+                packet.RejectAccessRequest()
             End If
 
         ElseIf launchTSGW = "LAUNCH" Then
@@ -267,7 +241,7 @@ Public Class CICRadarR
             Dim LaunchId_Ok As Boolean = False
             Dim sUserName As String = username.GetString.ToLower
 
-            AccessLog("TSGateWay Connection checking token validity for user: " & sUserName)
+            AccessLog("TSGateWay Connection checking token validity of user: " & sUserName)
 
             Dim existProxyState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.ProxyState)
             If existProxyState = True Then
@@ -293,9 +267,9 @@ Public Class CICRadarR
             End If
 
             If LaunchId_Ok Then ' found match in hash table' Return ok
-                RadiusAccept(server, packet, attributes)
+                packet.AcceptAccessRequest(attributes)
             Else
-                RadiusReject(server, packet, attributes)
+                packet.RejectAccessRequest()
             End If
 
         Else
@@ -310,7 +284,7 @@ Public Class CICRadarR
             ' will return Nothing.
             If username Is Nothing Then
                 ' Technically, this case is against RFC, so ... drop.
-                AccessLog("Not a valid radius packet.. No username pressent.. Drop!")
+                AccessLog("Not a valid radius packet.. No username present.. Drop!")
                 Exit Sub
             End If
 
@@ -377,13 +351,11 @@ Public Class CICRadarR
                         TSGWSessionIdTimeStampHash.Add(UserDomain, Now)
                     End If
 
-
-
                     Dim guidAttribute As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, sGUID)
                     attributes.Add(guidAttribute)
-                    RadiusAccept(server, packet, attributes)
+                    packet.AcceptAccessRequest(attributes)
                 Else
-                    RadiusReject(server, packet, attributes)
+                    packet.RejectAccessRequest()
                 End If
 
                 If TSGWFirstLoginTimeStampHash.Contains(UserDomain) Then ' Clean first login hash table
@@ -411,7 +383,6 @@ Public Class CICRadarR
 
                 AccessLog("User " & UserDomain & " is trying to log in ...")
 
-
                 Try
                     Dim dirEntry As New DirectoryEntry("LDAP://" & LDAPDomain, UserDomain, sPassword)
 
@@ -431,9 +402,7 @@ Public Class CICRadarR
                         search.PropertiesToLoad.Add(ADMailField)
                     End If
                     ' Time to find out if user entered the correct username and pasword 
-                    If DEBUG = True Then
-                        AccessLog("Trying to authenticate user agains Active Directory using te following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
-                    End If
+                    AccessLog("Authenticating: LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain)
                     Dim result As SearchResult = search.FindOne()
                     'Get the setting form AD. Yes we uses the field primaryTelexNumber, for who the f... still users telex. (I bet half the people reading this code don't even know what a telex is!)
                     'Dim code As String = DirectCast(result.Properties("primaryTelexNumber")(0), String)
@@ -501,18 +470,15 @@ Public Class CICRadarR
                         success = False
                     End If
                 Catch
-                    AccessLog("Failed to authenticate user agains Active Directory using the following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
+                    AccessLog("Failed to authenticate user against Active Directory using the following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
                     success = False
-                    'Console.WriteLine("fu...")
-                    'Console.WriteLine(ex.Message)
                 End Try
-
 
 
                 Dim attributes As New RADIUSAttributes
                 If success Then ' Yay! Someone guess the password ...
                     Dim sendType As String = ""
-                    AccessLog(Now & ":" & "User " & UserDomain & " authenticated agains Active Directory")
+                    AccessLog("User " & UserDomain & " authenticated against Active Directory")
                     If EnableOTP = True Then
                         If packet.Attributes.AttributeExists(RadiusAttributeType.VendorSpecific) Then
                             Dim VSAtts As RADIUSAttributes = packet.Attributes.GetAllAttributes(RadiusAttributeType.VendorSpecific)
@@ -559,21 +525,13 @@ Public Class CICRadarR
                         End If
 
                         Dim attr As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, "SMS Token")
-                        attributes.Add(attr)
                         Dim state As New RADIUSAttribute(RadiusAttributeType.State, sid)
-                        '  Dim state As New RADIUSAttribute(RadiusAttributeType.State, "julegris") ' test 
+
+                        attributes.Add(attr)
                         attributes.Add(state)
-                        '  Console.WriteLine("len " & packet.Authenticator.Length.ToString)
-                        server.SendAsResponse( _
-                            New RADIUSPacket(RadiusPacketCode.AccessChallenge, _
-                                             packet.Identifier, attributes, _
-                                             packet.EndPoint), _
-                            packet.Authenticator)
-                        ' If DEBUG = True Then
-                        'AccessLog("Sending access token: " & smsCode & " to phonenumber " & mobile)
-                        'End If
-                        '  Call SendSMS(mobile, smsCode)
-                        ' Console.WriteLine(smsCode)
+
+                        packet.SendAccessChallenge(attributes)
+
                     Else ' One time Password not enabled, so we let the user in 
                         ' add session key so user can access applications.
 
@@ -592,23 +550,15 @@ Public Class CICRadarR
                         End If
 
                         Dim guidAttribute As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, sGUID)
+
                         attributes.Add(guidAttribute)
-                        RadiusAccept(server, packet, attributes)
+                        packet.AcceptAccessRequest(attributes)
                     End If
                     ' packetHash.Remove(username.GetString & "_" & pass.GetString)
-                Else ' Wrong username / password ...
-
-                    AccessLog(Now & ":" & "User " & UserDomain & " failed to authenticate agains Active Directory")
-                    Dim pk As New RADIUSPacket(RadiusPacketCode.AccessReject, packet.Identifier, Nothing, packet.EndPoint)
-                    server.SendAsResponse(pk, packet.Authenticator)
-                    ' FYI ... if no additional attributes need to be added
-                    ' to the response, you can sepcify Nothing instead of
-                    ' creating an empty RADIUSAttributes object.
-                    '   packetHash.Remove(username.GetString & "_" & pass.GetString)
+                Else
+                    AccessLog("User " & UserDomain & " failed to authenticate against Active Directory")
+                    packet.RejectAccessRequest()
                 End If
-
-
-
             End If
         End If
 
@@ -646,7 +596,7 @@ Public Class CICRadarR
         End If
 
         AccessLog("Processing packet for user: " & username.GetString)
-        
+
         'If packetHash.ContainsKey(username.GetString & "_" & pass.GetString) Then
         '    Exit Sub
         'End If
@@ -674,13 +624,11 @@ Public Class CICRadarR
             End If
 
             sid = EncDec.Encrypt(UserDomain & "_" & packet.UserPassword, encCode)
-            ' sid = UserDomain & "_" & packet.UserPassword
-            Dim attributes As New RADIUSAttributes
             AccessLog("Checking for userHash " & sid)
             If sid = state Then
-                RadiusAccept(server, packet, attributes)
+                packet.AcceptAccessRequest()
             Else
-                RadiusReject(server, packet, attributes)
+                packet.RejectAccessRequest()
             End If
         Else ' process the first login
 
@@ -707,7 +655,7 @@ Public Class CICRadarR
                 UserDomain = NetBiosDomain & "\" & sUserName
             End If
 
-            AccessLog(Now & ":" & "User " & UserDomain & " is trying to log in ...")
+            AccessLog("User " & UserDomain & " is trying to log in ...")
 
 
 
@@ -736,7 +684,7 @@ Public Class CICRadarR
                 End If
                 ' Time to find out if user entered the correct username and pasword 
                 AccessLog("Trying to authenticate user agains Active Directory using te following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
-                
+
                 Dim result As SearchResult = search.FindOne()
                 'Get the setting form AD. Yes we uses the field primaryTelexNumber, for who the f... still users telex. (I bet half the people reading this code don't even know what a telex is!)
                 'Dim code As String = DirectCast(result.Properties("primaryTelexNumber")(0), String)
@@ -814,7 +762,7 @@ Public Class CICRadarR
             Dim attributes As New RADIUSAttributes
             If success Then ' Yay! Someone guess the password ...
 
-                AccessLog(Now & ":" & "User " & UserDomain & " authenticated agains Active Directory")
+                AccessLog("User " & UserDomain & " authenticated agains Active Directory")
                 If EnableOTP = True Then
                     Dim attr As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, "SMS Token")
                     attributes.Add(attr)
@@ -836,7 +784,7 @@ Public Class CICRadarR
                     End If
                 Else
                     AccessLog("One time Password not enabled, so we let the user in")
-                    RadiusAccept(server, packet, attributes)
+                    packet.AcceptAccessRequest()
                 End If
                 ' packetHash.Remove(username.GetString & "_" & pass.GetString)
             Else ' Wrong username / password ...
@@ -884,12 +832,12 @@ Public Class CICRadarR
             DEBUG = RConfig.GetKeyValue("CICRadarR", "Debug")
             NetBiosDomain = RConfig.GetKeyValue("CICRadarR", "NetBiosDomain")
             If NetBiosDomain.Length = 0 Then
-                Log.WriteLog(Now & ":" & "ERROR: NetBiosDomain can not be empty")
+                ServerLog("ERROR: NetBiosDomain can not be empty")
                 ConfOk = False
             End If
             LDAPDomain = RConfig.GetKeyValue("CICRadarR", "LDAPDomain")
             If LDAPDomain.Length = 0 Then
-                Log.WriteLog(Now & ":" & "ERROR: LDAPDomain can not be empty")
+                ServerLog("ERROR: LDAPDomain can not be empty")
                 ConfOk = False
             End If
 
@@ -907,7 +855,7 @@ Public Class CICRadarR
 
                 ADField = RConfig.GetKeyValue("CICRadarR", "ADField")
                 If ADField.Length = 0 Then
-                    Log.WriteLog(Now & ":" & "ERROR:  ADField can not be empty")
+                    ServerLog("ERROR:  ADField can not be empty")
                     ConfOk = False
                 End If
 
@@ -918,22 +866,22 @@ Public Class CICRadarR
                         Case "0"
                             Provider = RConfig.GetKeyValue("CICRadarR", "Provider")
                             If Provider.Length = 0 Then
-                                Log.WriteLog(Now & ":" & "ERROR:  Provider can not be empty")
+                                ServerLog("ERROR:  Provider can not be empty")
                                 ConfOk = False
                             End If
                         Case "1"
                             ComPort = RConfig.GetKeyValue("CICRadarR", "COMPORT")
                             If ComPort.Length = 0 Then
-                                Log.WriteLog(Now & ":" & "ERROR:  ComPort can not be empty")
+                                ServerLog("ERROR:  ComPort can not be empty")
                                 ConfOk = False
                             End If
                             SmsC = RConfig.GetKeyValue("CICRadarR", "SMSC")
                             If SmsC.Length = 0 Then
-                                Log.WriteLog(Now & ":" & "ERROR:  SMSC can not be empty. See http://smsclist.com/downloads/default.txt for valid values")
+                                ServerLog("ERROR:  SMSC can not be empty. See http://smsclist.com/downloads/default.txt for valid values")
                                 ConfOk = False
                             End If
                         Case Else
-                            Log.WriteLog(Now & ":" & "ERROR:  USELOCALMODEM contain invalid configuration. Correct value are 1 or 0")
+                            ServerLog("ERROR:  USELOCALMODEM contain invalid configuration. Correct value are 1 or 0")
                             ConfOk = False
                     End Select
                 End If
@@ -947,18 +895,18 @@ Public Class CICRadarR
             ClientArray = Split(ClientList, ",")
 
             For i As Integer = 0 To ClientArray.Length - 1
-                Log.WriteLog(Now & ":" & "Loading Shared Secret for Client: " & ClientArray(i))
+                ServerLog("Loading Shared Secret for Client: " & ClientArray(i))
                 clientHash.Add(ClientArray(i), EncDec.Decrypt(RConfig.GetKeyValue("Clients", ClientArray(i)), encCode))
             Next
 
             If ConfOk = True Then
-                Log.WriteLog(Now & ":" & "Loading Configuration...OK")
+                ServerLog("Loading Configuration...OK")
             Else
-                Log.WriteLog(Now & ":" & "Loading Configuration...FAILED")
+                ServerLog("Loading Configuration...FAILED")
             End If
         Catch
-            Log.WriteLog(Now & ":" & "ERROR: Missing CICRadarR.ini from startup path or CICRadarR.ini contains invalid configuration")
-            Log.WriteLog(Now & ":" & "Loading Configuration...FAILED")
+            ServerLog("ERROR: Missing CICRadarR.ini from startup path or CICRadarR.ini contains invalid configuration")
+            ServerLog("Loading Configuration...FAILED")
             End
         End Try
     End Sub

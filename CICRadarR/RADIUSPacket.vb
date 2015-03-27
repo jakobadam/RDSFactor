@@ -223,6 +223,10 @@ Public Class RADIUSPacket
         mServer.SendAsResponse(New RADIUSPacket(RadiusPacketCode.AccessReject, mIdentifier, Nothing, mEndPoint), mAuthenticator)
     End Sub
 
+    Public Sub SendAccessChallenge(ByVal attributes As RADIUSAttributes)
+        mServer.SendAsResponse(New RADIUSPacket(RadiusPacketCode.AccessChallenge, mIdentifier, attributes, mEndPoint), mAuthenticator)
+    End Sub
+
     Private Function XorBytes(ByVal oper1() As Byte, ByVal oper2() As Byte) As Byte()
         Dim res() As Byte = {}
         If oper1.Length <> oper2.Length Then Return res
