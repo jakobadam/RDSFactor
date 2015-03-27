@@ -1,0 +1,111 @@
+﻿
+Running a transacted installation.
+
+Beginning the Install phase of the installation.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Install phase completed successfully, and the Commit phase is beginning.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Commit phase completed successfully.
+
+The transacted install has completed.
+
+Running a transacted installation.
+
+Beginning the Install phase of the installation.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Install phase completed successfully, and the Commit phase is beginning.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Commit phase completed successfully.
+
+The transacted install has completed.
+
+Running a transacted installation.
+
+Beginning the Install phase of the installation.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+An exception occurred during the Install phase.
+System.InvalidOperationException: Installation failed due to the absence of a ServiceProcessInstaller. The ServiceProcessInstaller must either be the containing installer, or it must be present in the Installers collection on the same installer as the ServiceInstaller.
+
+The Rollback phase of the installation is beginning.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Rollback phase completed successfully.
+
+The transacted install has completed.
+
+Running a transacted installation.
+
+Beginning the Install phase of the installation.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Install phase completed successfully, and the Commit phase is beginning.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Commit phase completed successfully.
+
+The transacted install has completed.
+
+Running a transacted installation.
+
+Beginning the Install phase of the installation.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Install phase completed successfully, and the Commit phase is beginning.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Commit phase completed successfully.
+
+The transacted install has completed.
+
+Running a transacted installation.
+
+Beginning the Install phase of the installation.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+An exception occurred during the Install phase.
+System.InvalidOperationException: User has canceled installation of services in executable C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe.
+
+The Rollback phase of the installation is beginning.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Rollback phase completed successfully.
+
+The transacted install has completed.
+
+Running a transacted installation.
+
+Beginning the Install phase of the installation.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Install phase completed successfully, and the Commit phase is beginning.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The Commit phase completed successfully.
+
+The transacted install has completed.
+
+
+The uninstall is beginning.
+See the contents of the log file for the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly's progress.
+The file is located at C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog.
+
+The uninstall has completed.

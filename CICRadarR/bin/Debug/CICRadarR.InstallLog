@@ -1,0 +1,97 @@
+﻿Installing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+No public installers with the RunInstallerAttribute.Yes attribute could be found in the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly.
+Committing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+No public installers with the RunInstallerAttribute.Yes attribute could be found in the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly.
+Remove InstallState file because there are no installers.
+Installing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+No public installers with the RunInstallerAttribute.Yes attribute could be found in the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly.
+Committing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+No public installers with the RunInstallerAttribute.Yes attribute could be found in the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly.
+Remove InstallState file because there are no installers.
+Installing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+Installing service CICRadiusR...
+Creating EventLog source CICRadiusR in log Application...
+Rolling back assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+Restoring event log to previous state for source CICRadiusR.
+Installing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+No public installers with the RunInstallerAttribute.Yes attribute could be found in the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly.
+Committing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+No public installers with the RunInstallerAttribute.Yes attribute could be found in the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly.
+Remove InstallState file because there are no installers.
+Installing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+No public installers with the RunInstallerAttribute.Yes attribute could be found in the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly.
+Committing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+No public installers with the RunInstallerAttribute.Yes attribute could be found in the C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe assembly.
+Remove InstallState file because there are no installers.
+Installing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+Rolling back assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+Installing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+Installing service CICRadiusR...
+Service CICRadiusR has been successfully installed.
+Creating EventLog source CICRadiusR in log Application...
+Committing assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+Uninstalling assembly 'C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.InstallLog
+   assemblypath = C:\CICRadarR\CICRadarR\bin\Debug\CICRadarR.exe
+Removing EventLog source CICRadiusR.
+Service CICRadiusR is being removed from the system...
+Service CICRadiusR was successfully removed from the system.
+Attempt to stop service CICRadiusR.

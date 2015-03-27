@@ -1,0 +1,10 @@
+C:\Users\Administrator\documents\visual studio 2010\Projects\RadiusClient\RadiusClient\bin\Debug\RadiusClient.dll
+C:\Users\Administrator\documents\visual studio 2010\Projects\RadiusClient\RadiusClient\bin\Debug\RadiusClient.pdb
+C:\Users\Administrator\documents\visual studio 2010\Projects\RadiusClient\RadiusClient\bin\Debug\RadiusClient.xml
+C:\Users\Administrator\documents\visual studio 2010\Projects\RadiusClient\RadiusClient\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Administrator\documents\visual studio 2010\Projects\RadiusClient\RadiusClient\obj\Debug\RadiusClient.Resources.resources
+C:\Users\Administrator\documents\visual studio 2010\Projects\RadiusClient\RadiusClient\obj\Debug\RadiusClient.dll
+C:\Users\Administrator\documents\visual studio 2010\Projects\RadiusClient\RadiusClient\obj\Debug\RadiusClient.xml
+C:\Users\Administrator\documents\visual studio 2010\Projects\RadiusClient\RadiusClient\obj\Debug\RadiusClient.pdb
+C:\Users\Administrator\documents\visual studio 2010\Projects\RadiusClient\RadiusClient\obj\Debug\ResGen.read.1.tlog
+C:\Users\Administrator\documents\visual studio 2010\Projects\RadiusClient\RadiusClient\obj\Debug\ResGen.write.1.tlog
