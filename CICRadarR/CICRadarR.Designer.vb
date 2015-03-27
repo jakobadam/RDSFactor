@@ -19,7 +19,7 @@ Partial Class CICRadarR
     ' The main entry point for the process
     <MTAThread()> _
     <System.Diagnostics.DebuggerNonUserCode()> _
-    Shared Sub Main()
+    Shared Sub Main(ByVal args() As String)
         Dim ServicesToRun() As System.ServiceProcess.ServiceBase
 
         ' More than one NT Service may run within the same process. To add
@@ -28,9 +28,17 @@ Partial Class CICRadarR
         '
         '   ServicesToRun = New System.ServiceProcess.ServiceBase () {New Service1, New MySecondUserService}
         '
-        ServicesToRun = New System.ServiceProcess.ServiceBase() {New CICRadarR}
+        Dim server = New CICRadarR()
 
-        System.ServiceProcess.ServiceBase.Run(ServicesToRun)
+        If Environment.UserInteractive Then
+            server.OnStart(args)
+            Console.WriteLine("Type any character to exit")
+            Console.Read()
+            server.OnStop()
+        Else
+            ServicesToRun = New System.ServiceProcess.ServiceBase() {server}
+            System.ServiceProcess.ServiceBase.Run(ServicesToRun)
+        End If
     End Sub
 
     'Required by the Component Designer

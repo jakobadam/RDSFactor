@@ -8,8 +8,8 @@
     <SchemaVersion>
     </SchemaVersion>
     <ProjectGuid>{04C6C533-9FEA-41B2-B554-A166C7C7FE32}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
-    <StartupObject>CICRadarR.CICRadarR</StartupObject>
+    <OutputType>Exe</OutputType>
+    <StartupObject>Sub Main</StartupObject>
     <RootNamespace>CICRadarR</RootNamespace>
     <AssemblyName>CICRadarR</AssemblyName>
     <FileAlignment>512</FileAlignment>
