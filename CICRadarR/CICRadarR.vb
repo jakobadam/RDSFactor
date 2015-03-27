@@ -8,6 +8,7 @@ Imports System.Text
 Imports System
 Imports System.Net.Mail
 
+
 Public Class CICRadarR
 
     Private DEBUG As Boolean
@@ -128,7 +129,32 @@ Public Class CICRadarR
         ProcessPacket(radius1645, packet)
     End Sub
 
+    Private Sub AccessLog(ByVal message)
+        If DEBUG = True Then
+            UserAccessLog.WriteLog(Now & ": DEBUG: " & message)
+        End If
+    End Sub
 
+    Private Sub RadiusAccept(ByVal server As RADIUSServer,
+                             ByVal packet As RADIUSPacket,
+                             ByVal attributes As RADIUSAttributes
+                             )
+        AccessLog("Radius Accept")
+        server.SendAsResponse( _
+                           New RADIUSPacket(RadiusPacketCode.AccessAccept, _
+                                            packet.Identifier, attributes, _
+                                            packet.EndPoint), _
+                           packet.Authenticator)
+    End Sub
+
+    Private Sub RadiusReject(ByVal server As RADIUSServer, ByVal packet As RADIUSPacket, ByVal attributes As RADIUSAttributes)
+        AccessLog("Radius Reject")
+        server.SendAsResponse( _
+                            New RADIUSPacket(RadiusPacketCode.AccessReject, _
+                                             packet.Identifier, attributes, _
+                                             packet.EndPoint), _
+                            packet.Authenticator)
+    End Sub
 
     Private Sub ProcessPacket(ByVal server As RADIUSServer, ByVal packet As RADIUSPacket)
         Dim muuh As New VendorSpecificAttribute(VendorSpecificType.Generic, "LAUNCH")
@@ -155,7 +181,7 @@ Public Class CICRadarR
             ProcessPacketCSG(server, packet)
         End If
     End Sub
- 
+
 
     Sub ProcessPacketTSGW(ByVal server As RADIUSServer, ByVal packet As RADIUSPacket)
 
@@ -163,15 +189,10 @@ Public Class CICRadarR
         ' and drop other requests silently ...
 
         If packet.Code <> RadiusPacketCode.AccessRequest Then
-            If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Not a valid radius packet.. Drop!")
-
-            End If
+            AccessLog("Not a valid radius packet.. Drop!")
             Exit Sub
         Else
-            If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Radius packet recived")
-            End If
+            AccessLog("Radius packet recived")
         End If
 
         Dim LaunchApp As String = ""
@@ -207,87 +228,74 @@ Public Class CICRadarR
         Dim pass As RADIUSAttribute = packet.Attributes.GetFirstAttribute(RadiusAttributeType.UserPassword)
 
 
-        If LaunchApp = "LAUNCH" Then ' handle RadiusSession when application launches. Store it and check when connection is made through TS Gateway
-
+        If LaunchApp = "LAUNCH" Then
             Dim sRadiusSessionId = packet.UserPassword
             Dim attributes As New RADIUSAttributes
             Dim SessionId_Ok As Boolean = False
             Dim sUserName As String = username.GetString.ToLower
 
-            If TSGWSessionIdHash.Contains(sUserName) And TSGWSessionIdTimeStampHash.Contains(sUserName) Then ' user has a session lets check if it valid
+            AccessLog("RDWeb app launch: Checking token validity for user: " & sUserName)
+
+            If TSGWSessionIdHash.Contains(sUserName) And TSGWSessionIdTimeStampHash.Contains(sUserName) Then
                 Dim hashTime As DateTime = DirectCast(TSGWSessionIdTimeStampHash(sUserName), DateTime)
                 Dim tValid = DateDiff(DateInterval.Minute, hashTime, Now)
                 If tValid < SessionTimeOut Then
                     ' check session id
-                    If sRadiusSessionId = DirectCast(TSGWSessionIdHash(sUserName), String) Then ' Session id match 
-                        SessionId_Ok = True ' Session ok now add launch hash key
+                    If sRadiusSessionId = DirectCast(TSGWSessionIdHash(sUserName), String) Then ' Session id match
+                        SessionId_Ok = True
                         If TSGWLaunchIdTimeStampHash.Contains(sUserName) Then
                             TSGWLaunchIdTimeStampHash(sUserName) = Now
                         Else
                             TSGWLaunchIdTimeStampHash.Add(sUserName, Now)
                         End If
-                        Console.WriteLine(sUserName)
                     End If
                 End If
 
             End If
 
             If SessionId_Ok Then ' found match in hash table' Return ok
-                server.SendAsResponse( _
-                            New RADIUSPacket(RadiusPacketCode.AccessAccept, _
-                                             packet.Identifier, attributes, _
-                                             packet.EndPoint), _
-                            packet.Authenticator)
+                RadiusAccept(server, packet, attributes)
             Else
-                server.SendAsResponse( _
-                            New RADIUSPacket(RadiusPacketCode.AccessReject, _
-                                             packet.Identifier, attributes, _
-                                             packet.EndPoint), _
-                            packet.Authenticator)
+                RadiusReject(server, packet, attributes)
             End If
 
+        ElseIf launchTSGW = "LAUNCH" Then
 
-        ElseIf launchTSGW = "LAUNCH" Then ' TSGateWay Connection 
             Dim sRadiusSessionId = packet.UserPassword
             Dim attributes As New RADIUSAttributes
             Dim proxyState As String
             Dim LaunchId_Ok As Boolean = False
             Dim sUserName As String = username.GetString.ToLower
 
+            AccessLog("TSGateWay Connection checking token validity for user: " & sUserName)
+
             Dim existProxyState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.ProxyState)
             If existProxyState = True Then
                 proxyState = packet.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState).GetString
-                If DEBUG = True Then
-                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: Packet contains a state attribute ProxyState=" & proxyState)
-                End If
+                AccessLog("Packet contains a state attribute ProxyState=" & proxyState)
                 attributes.Add(packet.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState))
             End If
 
             'Check launchHash to see if user hash a valid launch window (default 30 sec.)
-            Console.WriteLine(sUserName)
+
             If TSGWLaunchIdTimeStampHash.Contains(sUserName) = True Then ' user has a launch id lets check if it valid
                 Dim hashTime As DateTime = DirectCast(TSGWLaunchIdTimeStampHash(sUserName), DateTime)
                 Dim tValid = DateDiff(DateInterval.Second, hashTime, Now)
                 If tValid < LaunchTimeOut Then
+                    AccessLog("User " & sUserName & " has valid token.")
                     LaunchId_Ok = True ' Launch ok now add launch hash key
                     TSGWLaunchIdTimeStampHash.Remove(sUserName)
+                Else
+                    AccessLog("Token of " & sUserName & " timed out.")
                 End If
+            Else
+                AccessLog(sUserName & " has no entry in db.")
             End If
 
-
-
             If LaunchId_Ok Then ' found match in hash table' Return ok
-                server.SendAsResponse( _
-                            New RADIUSPacket(RadiusPacketCode.AccessAccept, _
-                                             packet.Identifier, attributes, _
-                                             packet.EndPoint), _
-                            packet.Authenticator)
+                RadiusAccept(server, packet, attributes)
             Else
-                server.SendAsResponse( _
-                            New RADIUSPacket(RadiusPacketCode.AccessReject, _
-                                             packet.Identifier, attributes, _
-                                             packet.EndPoint), _
-                            packet.Authenticator)
+                RadiusReject(server, packet, attributes)
             End If
 
         Else
@@ -302,52 +310,35 @@ Public Class CICRadarR
             ' will return Nothing.
             If username Is Nothing Then
                 ' Technically, this case is against RFC, so ... drop.
-                If DEBUG = True Then
-                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: Not a valid radius packet.. No username pressent.. Drop!")
-                End If
+                AccessLog("Not a valid radius packet.. No username pressent.. Drop!")
                 Exit Sub
             End If
 
-            If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Processing packet for user: " & username.GetString)
-            End If
-
+            AccessLog("Processing packet for user: " & username.GetString)
 
             Dim existState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.State)
             Dim existProxyState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.ProxyState)
-            If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Packet contains a state attribute? State=" & existState.ToString)
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Packet contains a proxy-state attribute? Proxy-State=" & existState.ToString)
-            End If
 
             If existState = True Then  ' Ok we have at packet with the State attribute set. Check if we can identify the authtentication packet. (User provides the sms token)
                 Dim state As String
                 Dim proxyState As String
 
                 state = packet.Attributes.GetFirstAttribute(RadiusAttributeType.State).GetString
-                If DEBUG = True Then
-                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: Packet contains a state attribute State=" & state)
-                End If
-
+                AccessLog("Packet contains a state attribute State=" & state)
 
                 If existProxyState = True Then
                     proxyState = packet.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState).GetString
-                    If DEBUG = True Then
-                        UserAccessLog.WriteLog(Now & ":" & "DEBUG: Packet contains a state attribute State=" & proxyState)
-                    End If
+                    AccessLog("Packet contains a state attribute State=" & proxyState)
                 End If
 
 
                 Dim UserDomain As String = ""
                 'lets see if user login using upd or UPN name
                 Dim sUserName As String = username.GetString.ToLower
-                If DEBUG = True Then
-                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: Username = " & sUserName)
-                End If
                 Dim sPassword As String = packet.UserPassword
-                If DEBUG = True Then
-                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: SMSToken supplied by the user = " & sPassword)
-                End If
+
+                AccessLog("SMSToken supplied by user: " & sUserName)
+
                 sid = ""
                 If InStr(sUserName, "@") > 0 Then 'UPN
                     UserDomain = sUserName
@@ -359,14 +350,11 @@ Public Class CICRadarR
                 sid = EncDec.Encrypt(UserDomain & "_" & packet.UserPassword, encCode)
 
                 Dim attributes As New RADIUSAttributes
-                If DEBUG = True Then
-                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: Checking for userHash " & sid)
-                End If
+
+                AccessLog("Checking for userHash " & sid)
 
                 If sid = state Then ' All good allow user access to the Web Interface
-                    If DEBUG = True Then
-                        UserAccessLog.WriteLog(Now & ":" & "DEBUG: State and Sid match. Sending accept packet to Netscaler")
-                    End If
+                    AccessLog("State and Sid match. Sending accept packet to Netscaler")
                     If existProxyState = True Then
                         attributes.Add(packet.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState))
                     End If
@@ -393,25 +381,9 @@ Public Class CICRadarR
 
                     Dim guidAttribute As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, sGUID)
                     attributes.Add(guidAttribute)
-                    ' send accept packet to the user
-                    server.SendAsResponse( _
-                   New RADIUSPacket(RadiusPacketCode.AccessAccept, _
-                                    packet.Identifier, attributes, _
-                                    packet.EndPoint), _
-                   packet.Authenticator)
-                    UserAccessLog.WriteLog(Now & ":" & "User " & UserDomain & " has successfully authenticated with Token")
+                    RadiusAccept(server, packet, attributes)
                 Else
-                    If DEBUG = True Then
-                        UserAccessLog.WriteLog(Now & ":" & "DEBUG: State and Sid does not match. Sending reject packet to Netscaler")
-                    End If
-
-                    server.SendAsResponse( _
-                New RADIUSPacket(RadiusPacketCode.AccessReject, _
-                                 packet.Identifier, attributes, _
-                                 packet.EndPoint), _
-                packet.Authenticator)
-                    UserAccessLog.WriteLog(Now & ":" & "User " & UserDomain & " has failed to authenticate. Incorrect Token")
-
+                    RadiusReject(server, packet, attributes)
                 End If
 
                 If TSGWFirstLoginTimeStampHash.Contains(UserDomain) Then ' Clean first login hash table
@@ -437,7 +409,7 @@ Public Class CICRadarR
                     UserDomain = sUserName
                 End If
 
-                UserAccessLog.WriteLog(Now & ":" & "User " & UserDomain & " is trying to log in ...")
+                AccessLog("User " & UserDomain & " is trying to log in ...")
 
 
                 Try
@@ -460,7 +432,7 @@ Public Class CICRadarR
                     End If
                     ' Time to find out if user entered the correct username and pasword 
                     If DEBUG = True Then
-                        UserAccessLog.WriteLog(Now & ":" & "DEBUG: Trying to authenticate user agains Active Directory using te following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
+                        AccessLog("Trying to authenticate user agains Active Directory using te following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
                     End If
                     Dim result As SearchResult = search.FindOne()
                     'Get the setting form AD. Yes we uses the field primaryTelexNumber, for who the f... still users telex. (I bet half the people reading this code don't even know what a telex is!)
@@ -479,9 +451,7 @@ Public Class CICRadarR
                                 mobile = Replace(mobile, "+", "")
                                 If mobile.Trim.Length = 0 Then
                                     success = False
-                                    If DEBUG = True Then
-                                        UserAccessLog.WriteLog(Now & ":" & "DEBUG: Unable to find correct phone number for user " & UserDomain)
-                                    End If
+                                    AccessLog("Unable to find correct phone number for user " & UserDomain)
                                 Else
                                     success = True
                                 End If
@@ -492,17 +462,13 @@ Public Class CICRadarR
 
                                 If InStr(email, "@") = 0 Then
                                     success = False
-                                    If DEBUG = True Then
-                                        UserAccessLog.WriteLog(Now & ":" & "DEBUG: Unable to find correct email for user " & UserDomain)
-                                    End If
+                                    AccessLog("Unable to find correct email for user " & UserDomain)
                                 Else
                                     success = True
                                 End If
                             End If
                         Catch
-                            If DEBUG = True Then
-                                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Unable to find correct phone number or email for user " & UserDomain)
-                            End If
+                            AccessLog("Unable to find correct phone number or email for user " & UserDomain)
                             success = False
                         End Try
 
@@ -519,12 +485,12 @@ Public Class CICRadarR
                         'If userHash.ContainsKey(sid) Then
                         '    userHash(sid) = sPassword
                         '    If DEBUG = True Then
-                        '        UserAccessLog.WriteLog(Now & ":" & "DEBUG: Updating userHash " & sid)
+                        '        AccessLog("Updating userHash " & sid)
                         '    End If
                         'Else
                         '    userHash.Add(sid, sPassword)
                         '    If DEBUG = True Then
-                        '        UserAccessLog.WriteLog(Now & ":" & "DEBUG: Adding userHash " & sid)
+                        '        AccessLog("Adding userHash " & sid)
                         '    End If
                         'End If
                         ' new code stored in AD now send it to the users phone
@@ -535,9 +501,7 @@ Public Class CICRadarR
                         success = False
                     End If
                 Catch
-                    If DEBUG = True Then
-                        UserAccessLog.WriteLog(Now & ":" & "DEBUG: Failed to authenticate user agains Active Directory using the following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
-                    End If
+                    AccessLog("Failed to authenticate user agains Active Directory using the following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
                     success = False
                     'Console.WriteLine("fu...")
                     'Console.WriteLine(ex.Message)
@@ -548,7 +512,7 @@ Public Class CICRadarR
                 Dim attributes As New RADIUSAttributes
                 If success Then ' Yay! Someone guess the password ...
                     Dim sendType As String = ""
-                    UserAccessLog.WriteLog(Now & ":" & "User " & UserDomain & " authenticated agains Active Directory")
+                    AccessLog(Now & ":" & "User " & UserDomain & " authenticated agains Active Directory")
                     If EnableOTP = True Then
                         If packet.Attributes.AttributeExists(RadiusAttributeType.VendorSpecific) Then
                             Dim VSAtts As RADIUSAttributes = packet.Attributes.GetAllAttributes(RadiusAttributeType.VendorSpecific)
@@ -578,15 +542,11 @@ Public Class CICRadarR
 
                         If TSGWFirstLoginHash.Contains(UserDomain) Then
                             sid = TSGWFirstLoginHash(UserDomain).ToString
-                            If DEBUG = True Then
-                                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Access token already send to phonenumber " & mobile)
-                            End If
+                            AccessLog("Access token already send to phonenumber " & mobile)
                         Else
                             smsCode = GenerateCode()
                             sid = EncDec.Encrypt(UserDomain & "_" & smsCode, encCode) 'generate unique code
-                            If DEBUG = True Then
-                                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Sending access token: " & smsCode & " to phonenumber " & mobile)
-                            End If
+                            AccessLog("Sending access token: " & smsCode & " to phonenumber " & mobile)
                             TSGWFirstLoginHash.Add(UserDomain, sid)
                             TSGWFirstLoginTimeStampHash.Add(UserDomain, Now)
 
@@ -610,7 +570,7 @@ Public Class CICRadarR
                                              packet.EndPoint), _
                             packet.Authenticator)
                         ' If DEBUG = True Then
-                        'UserAccessLog.WriteLog(Now & ":" & "DEBUG: Sending access token: " & smsCode & " to phonenumber " & mobile)
+                        'AccessLog("Sending access token: " & smsCode & " to phonenumber " & mobile)
                         'End If
                         '  Call SendSMS(mobile, smsCode)
                         ' Console.WriteLine(smsCode)
@@ -633,24 +593,19 @@ Public Class CICRadarR
 
                         Dim guidAttribute As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, sGUID)
                         attributes.Add(guidAttribute)
-                        server.SendAsResponse( _
-                          New RADIUSPacket(RadiusPacketCode.AccessAccept, _
-                                           packet.Identifier, attributes, _
-                                           packet.EndPoint), _
-                          packet.Authenticator)
-
+                        RadiusAccept(server, packet, attributes)
                     End If
-                        ' packetHash.Remove(username.GetString & "_" & pass.GetString)
-                    Else ' Wrong username / password ...
+                    ' packetHash.Remove(username.GetString & "_" & pass.GetString)
+                Else ' Wrong username / password ...
 
-                        UserAccessLog.WriteLog(Now & ":" & "User " & UserDomain & " failed to authenticate agains Active Directory")
-                        Dim pk As New RADIUSPacket(RadiusPacketCode.AccessReject, packet.Identifier, Nothing, packet.EndPoint)
-                        server.SendAsResponse(pk, packet.Authenticator)
-                        ' FYI ... if no additional attributes need to be added
-                        ' to the response, you can sepcify Nothing instead of
-                        ' creating an empty RADIUSAttributes object.
-                        '   packetHash.Remove(username.GetString & "_" & pass.GetString)
-                    End If
+                    AccessLog(Now & ":" & "User " & UserDomain & " failed to authenticate agains Active Directory")
+                    Dim pk As New RADIUSPacket(RadiusPacketCode.AccessReject, packet.Identifier, Nothing, packet.EndPoint)
+                    server.SendAsResponse(pk, packet.Authenticator)
+                    ' FYI ... if no additional attributes need to be added
+                    ' to the response, you can sepcify Nothing instead of
+                    ' creating an empty RADIUSAttributes object.
+                    '   packetHash.Remove(username.GetString & "_" & pass.GetString)
+                End If
 
 
 
@@ -667,11 +622,8 @@ Public Class CICRadarR
         ' and drop other requests silently ...
 
         If packet.Code <> RadiusPacketCode.AccessRequest Then
-            If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Not a valid radius packet.. Drop!")
-            End If
+            AccessLog("Not a valid radius packet.. Drop!")
             Exit Sub
-
         End If
 
 
@@ -689,16 +641,12 @@ Public Class CICRadarR
         ' will return Nothing.
         If username Is Nothing Then
             ' Technically, this case is against RFC, so ... drop.
-            If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Not a valid radius packet.. No username pressent.. Drop!")
-            End If
+            AccessLog("Not a valid radius packet.. No username pressent.. Drop!")
             Exit Sub
         End If
 
-        If DEBUG = True Then
-            UserAccessLog.WriteLog(Now & ":" & "DEBUG: Processing packet for user: " & username.GetString)
-        End If
-
+        AccessLog("Processing packet for user: " & username.GetString)
+        
         'If packetHash.ContainsKey(username.GetString & "_" & pass.GetString) Then
         '    Exit Sub
         'End If
@@ -706,24 +654,17 @@ Public Class CICRadarR
 
 
         Dim existState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.State)
-        If DEBUG = True Then
-            UserAccessLog.WriteLog(Now & ":" & "DEBUG: Packet contains a state attribute? State=" & existState.ToString)
-        End If
+        AccessLog("Packet contains a state attribute? State=" & existState.ToString)
         If existState = True Then  ' Ok we have at packet with the State attribute set. Check if we can identify the authtentication packet.
             Dim state As String = packet.Attributes.GetFirstAttribute(RadiusAttributeType.State).GetString
-            If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Packet contains a state attribute State=" & state)
-            End If
+            AccessLog("Packet contains a state attribute State=" & state)
             Dim UserDomain As String = ""
             'lets see if user login using upd or UPN name
             Dim sUserName As String = username.GetString
-            If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Username = " & sUserName)
-            End If
             Dim sPassword As String = packet.UserPassword
-            If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: SMSToken supplied by the user = " & sPassword)
-            End If
+
+            AccessLog("SMSToken supplied by user: " & sUserName)
+
             sid = ""
             If InStr(sUserName, "@") > 0 Then 'UPN
                 UserDomain = sUserName
@@ -735,32 +676,11 @@ Public Class CICRadarR
             sid = EncDec.Encrypt(UserDomain & "_" & packet.UserPassword, encCode)
             ' sid = UserDomain & "_" & packet.UserPassword
             Dim attributes As New RADIUSAttributes
-            If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Checking for userHash " & sid)
-            End If
+            AccessLog("Checking for userHash " & sid)
             If sid = state Then
-                If DEBUG = True Then
-                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: State and Sid match. Sending accept packet to Netscaler")
-                End If
-
-                server.SendAsResponse( _
-               New RADIUSPacket(RadiusPacketCode.AccessAccept, _
-                                packet.Identifier, attributes, _
-                                packet.EndPoint), _
-               packet.Authenticator)
-                UserAccessLog.WriteLog(Now & ":" & "User " & UserDomain & " has successfully authenticated with Token")
+                RadiusAccept(server, packet, attributes)
             Else
-                If DEBUG = True Then
-                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: State and Sid does not match. Sending reject packet to Netscaler")
-                End If
-
-                server.SendAsResponse( _
-            New RADIUSPacket(RadiusPacketCode.AccessReject, _
-                             packet.Identifier, attributes, _
-                             packet.EndPoint), _
-            packet.Authenticator)
-                UserAccessLog.WriteLog(Now & ":" & "User " & UserDomain & " has failed to authenticate. Incorrect Token")
-
+                RadiusReject(server, packet, attributes)
             End If
         Else ' process the first login
 
@@ -787,7 +707,7 @@ Public Class CICRadarR
                 UserDomain = NetBiosDomain & "\" & sUserName
             End If
 
-            UserAccessLog.WriteLog(Now & ":" & "User " & UserDomain & " is trying to log in ...")
+            AccessLog(Now & ":" & "User " & UserDomain & " is trying to log in ...")
 
 
 
@@ -815,9 +735,8 @@ Public Class CICRadarR
 
                 End If
                 ' Time to find out if user entered the correct username and pasword 
-                If DEBUG = True Then
-                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: Trying to authenticate user agains Active Directory using te following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
-                End If
+                AccessLog("Trying to authenticate user agains Active Directory using te following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
+                
                 Dim result As SearchResult = search.FindOne()
                 'Get the setting form AD. Yes we uses the field primaryTelexNumber, for who the f... still users telex. (I bet half the people reading this code don't even know what a telex is!)
                 'Dim code As String = DirectCast(result.Properties("primaryTelexNumber")(0), String)
@@ -835,16 +754,12 @@ Public Class CICRadarR
 
                             If UserEmail.Trim.Length = 0 Or InStr(UserEmail, "@") = 0 Then
                                 success = False
-                                If DEBUG = True Then
-                                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: Unable to find correct email for user " & UserDomain)
-                                End If
+                                AccessLog("Unable to find correct email for user " & UserDomain)
                             Else
                                 success = True
                             End If
                         Catch
-                            If DEBUG = True Then
-                                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Unable to find correct email for user " & UserDomain)
-                            End If
+                            AccessLog("Unable to find correct email for user " & UserDomain)
                             success = False
                         End Try
                     End If
@@ -854,16 +769,12 @@ Public Class CICRadarR
                             mobile = Replace(mobile, "+", "")
                             If mobile.Trim.Length = 0 Then
                                 success = False
-                                If DEBUG = True Then
-                                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: Unable to find correct phone number for user " & UserDomain)
-                                End If
+                                AccessLog("Unable to find correct phone number for user " & UserDomain)
                             Else
                                 success = True
                             End If
                         Catch
-                            If DEBUG = True Then
-                                UserAccessLog.WriteLog(Now & ":" & "DEBUG: Unable to find correct phone number for user " & UserDomain)
-                            End If
+                            AccessLog("Unable to find correct phone number for user " & UserDomain)
                             success = False
                         End Try
 
@@ -879,12 +790,12 @@ Public Class CICRadarR
                     'If userHash.ContainsKey(sid) Then
                     '    userHash(sid) = sPassword
                     '    If DEBUG = True Then
-                    '        UserAccessLog.WriteLog(Now & ":" & "DEBUG: Updating userHash " & sid)
+                    '        AccessLog("Updating userHash " & sid)
                     '    End If
                     'Else
                     '    userHash.Add(sid, sPassword)
                     '    If DEBUG = True Then
-                    '        UserAccessLog.WriteLog(Now & ":" & "DEBUG: Adding userHash " & sid)
+                    '        AccessLog("Adding userHash " & sid)
                     '    End If
                     'End If
                     ' new code stored in AD now send it to the users phone
@@ -895,18 +806,15 @@ Public Class CICRadarR
                     success = False
                 End If
             Catch
-                If DEBUG = True Then
-                    UserAccessLog.WriteLog(Now & ":" & "DEBUG: Failed to authenticate user agains Active Directory using the following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
-                End If
+                AccessLog("Failed to authenticate user agains Active Directory using the following parameters: " & "LDAPPAth: " & "LDAP://" & LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
                 success = False
-               
             End Try
 
 
             Dim attributes As New RADIUSAttributes
             If success Then ' Yay! Someone guess the password ...
 
-                UserAccessLog.WriteLog(Now & ":" & "User " & UserDomain & " authenticated agains Active Directory")
+                AccessLog(Now & ":" & "User " & UserDomain & " authenticated agains Active Directory")
                 If EnableOTP = True Then
                     Dim attr As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, "SMS Token")
                     attributes.Add(attr)
@@ -919,30 +827,21 @@ Public Class CICRadarR
                                          packet.EndPoint), _
                         packet.Authenticator)
                     If EnableSMS = True Then
-                        If DEBUG = True Then
-                            UserAccessLog.WriteLog(Now & ":" & "DEBUG: Sending access token: " & smsCode & " to phonenumber " & mobile)
-                        End If
-
+                        AccessLog("Sending access token: " & smsCode & " to phonenumber " & mobile)
                         Call SendSMS(mobile, smsCode)
                     End If
                     If EnableEmail = True Then
-                        If DEBUG = True Then
-                            UserAccessLog.WriteLog(Now & ":" & "DEBUG: Sending access token: " & smsCode & " to email " & UserEmail)
-                        End If
-
+                        AccessLog("Sending access token: " & smsCode & " to email " & UserEmail)
                         Call SendEmail(UserEmail, smsCode)
                     End If
-                Else ' One time Password not enabled, so we let the user in 
-                    server.SendAsResponse( _
-                      New RADIUSPacket(RadiusPacketCode.AccessAccept, _
-                                       packet.Identifier, attributes, _
-                                       packet.EndPoint), _
-                      packet.Authenticator)
+                Else
+                    AccessLog("One time Password not enabled, so we let the user in")
+                    RadiusAccept(server, packet, attributes)
                 End If
                 ' packetHash.Remove(username.GetString & "_" & pass.GetString)
             Else ' Wrong username / password ...
 
-                UserAccessLog.WriteLog(Now & ":" & "User " & UserDomain & " failed to authenticate agains Active Directory")
+                AccessLog("User " & UserDomain & " failed to authenticate against Active Directory")
                 Dim pk As New RADIUSPacket(RadiusPacketCode.AccessReject, packet.Identifier, Nothing, packet.EndPoint)
                 server.SendAsResponse(pk, packet.Authenticator)
                 ' FYI ... if no additional attributes need to be added
@@ -1130,14 +1029,14 @@ Public Class CICRadarR
         Try
             smtp.Send(mail)
             If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & ": Mail send to: " & email)
+                AccessLog(Now & ": Mail send to: " & email)
             End If
             Return "SEND"
         Catch e As InvalidCastException
 
             If DEBUG = True Then
-                UserAccessLog.WriteLog(Now & " : Debug: " & e.Message)
-                UserAccessLog.WriteLog(Now & " : Unable to send mail to: " & email & "  ## Check that MAILSERVER and SENDEREMAIL are configured correctly in smscode.conf. Also check that your Webinterface server is allowed to relay through the mail server specified")
+                AccessLog(Now & " : Debug: " & e.Message)
+                AccessLog(Now & " : Unable to send mail to: " & email & "  ## Check that MAILSERVER and SENDEREMAIL are configured correctly in smscode.conf. Also check that your Webinterface server is allowed to relay through the mail server specified")
             End If
             Return "FAILED"
         End Try
