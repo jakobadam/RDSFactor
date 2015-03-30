@@ -11,8 +11,15 @@ Imports System.Net.Mail
 
 Public Class CICRadarR
 
+    Public Shared LDAPDomain As String = ""
+    Public Shared ADField As String = ""
+    Public Shared ADMailField As String = ""
+
+    ' TODO: What this?
+    Public Shared encCode As String = "gewsyy#sjs2!"
+
     Private DEBUG As Boolean
-    Private EnableOTP As Boolean
+    Public Shared EnableOTP As Boolean
     Private Log As New LogWriter
     Private UserAccessLog As New LogWriter
     Private secrets As NASAuthList
@@ -22,23 +29,23 @@ Public Class CICRadarR
     Private packetHash As New Hashtable
     Private clientHash As New Hashtable
     Private NetBiosDomain As String = ""
-    Private LDAPDomain As String = ""
+
     Private Provider As String = ""
-    Private ADField As String = ""
-    Private ADMailField As String = ""
+
+
     Private ModemType As String = ""
     Private ComPort As String = ""
     Private SmsC As String = ""
     Private MailServer As String = ""
     Private SenderEmail As String = ""
-    Private encCode As String = "gewsyy#sjs2!"
+
     Private TSGW As String = ""
     Private TSGWSessionIdHash As New Hashtable
     Private TSGWSessionIdTimeStampHash As New Hashtable
     Private TSGWLaunchIdTimeStampHash As New Hashtable
     Private TSGWFirstLoginHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
     Private TSGWFirstLoginTimeStampHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
-    Private SessionTimeOut As Integer = 30 ' in minutes
+    Public Shared SessionTimeOut As Integer = 30 ' in minutes
     Private LaunchTimeOut As Integer = 30 ' in seconds
     Private EnableSMS As Boolean = False
     Private EnableEmail As Boolean = False
@@ -91,16 +98,13 @@ Public Class CICRadarR
         Next
         ' Then, we just create a RADIUS server ...
         Try
-            ServerLog("Starting Radius Server on Port 1812...")
             radius1812 = New RADIUSServer(1812, AddressOf ProcessPacket1812, secrets)
             ServerLog("Starting Radius Server on Port 1812...OK")
         Catch
             ServerLog("Starting Radius Server on Port 1812...FAILED")
-
         End Try
 
         Try
-            ServerLog("Starting Radius Server on Port 1645...")
             radius1645 = New RADIUSServer(1645, AddressOf ProcessPacket1645, secrets)
             ServerLog("Starting Radius Server on Port 1645...OK")
         Catch
@@ -133,25 +137,14 @@ Public Class CICRadarR
 
     Private Sub ProcessPacket(ByVal server As RADIUSServer, ByVal packet As RADIUSPacket)
         Dim muuh As New VendorSpecificAttribute(VendorSpecificType.Generic, "LAUNCH")
-
         Dim atts As New RADIUSAttributes
+
         muuh.SetRADIUSAttribute(atts)
 
-
-        'For i As Integer = 0 To muuh.
-        '    Dim att As RADIUSAttribute
-        '    att = atts(i)
-        '    Dim ged As String
-        '    ged = att.GetVendorSpecific().VendorValue.ToString()
-
-
-        'Next
-
-        '   Dim att As New VendorSpecificAttribute(VendorSpecificType.Generic, "LAUNCH")
-
-        '   Dim ost As New RADIUSAttribute(RadiusAttributeType.VendorSpecific, att.VendorName & att.VendorType & att.VendorValue)
         If TSGW = "1" Then
-            ProcessPacketTSGW(server, packet)
+            Dim rds As New RDSHandler(packet)
+            rds.ProcessRequest()
+            'ProcessPacketTSGW(server, packet)
         Else
             ProcessPacketCSG(server, packet)
         End If
@@ -166,9 +159,9 @@ Public Class CICRadarR
         If packet.Code <> RadiusPacketCode.AccessRequest Then
             AccessLog("Not a valid radius packet.. Drop!")
             Exit Sub
-        Else
-            AccessLog("Radius packet recived")
         End If
+
+        AccessLog("Radius packet recived")
 
         Dim LaunchApp As String = ""
         Dim launchTSGW As String = ""
@@ -206,7 +199,7 @@ Public Class CICRadarR
         If LaunchApp = "LAUNCH" Then
             Dim sRadiusSessionId = packet.UserPassword
             Dim SessionId_Ok As Boolean = False
-            Dim sUserName As String = username.GetString.ToLower
+            Dim sUserName As String = username.ToString.ToLower
 
             AccessLog("RDWeb app launch: Checking token validity of user: " & sUserName)
 
@@ -239,13 +232,13 @@ Public Class CICRadarR
             Dim attributes As New RADIUSAttributes
             Dim proxyState As String
             Dim LaunchId_Ok As Boolean = False
-            Dim sUserName As String = username.GetString.ToLower
+            Dim sUserName As String = username.ToString.ToLower
 
-            AccessLog("TSGateWay Connection checking token validity of user: " & sUserName)
+            AccessLog("TSGateway Connection checking token validity of user: " & sUserName)
 
             Dim existProxyState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.ProxyState)
             If existProxyState = True Then
-                proxyState = packet.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState).GetString
+                proxyState = packet.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState).ToString
                 AccessLog("Packet contains a state attribute ProxyState=" & proxyState)
                 attributes.Add(packet.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState))
             End If
@@ -288,7 +281,7 @@ Public Class CICRadarR
                 Exit Sub
             End If
 
-            AccessLog("Processing packet for user: " & username.GetString)
+            AccessLog("Processing packet for user: " & username.ToString)
 
             Dim existState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.State)
             Dim existProxyState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.ProxyState)
@@ -297,18 +290,18 @@ Public Class CICRadarR
                 Dim state As String
                 Dim proxyState As String
 
-                state = packet.Attributes.GetFirstAttribute(RadiusAttributeType.State).GetString
+                state = packet.Attributes.GetFirstAttribute(RadiusAttributeType.State).ToString
                 AccessLog("Packet contains a state attribute State=" & state)
 
                 If existProxyState = True Then
-                    proxyState = packet.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState).GetString
+                    proxyState = packet.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState).ToString
                     AccessLog("Packet contains a state attribute State=" & proxyState)
                 End If
 
 
                 Dim UserDomain As String = ""
                 'lets see if user login using upd or UPN name
-                Dim sUserName As String = username.GetString.ToLower
+                Dim sUserName As String = username.ToString.ToLower
                 Dim sPassword As String = packet.UserPassword
 
                 AccessLog("SMSToken supplied by user: " & sUserName)
@@ -364,14 +357,11 @@ Public Class CICRadarR
                 End If
 
             Else ' process the first login (sending sms token)
-
-
-
                 'Now lets get some information from ad if password is valid
                 Dim success As Boolean = False
                 Dim UserDomain As String = ""
                 'lets see if user login using upd or UPN name
-                Dim sUserName As String = username.GetString.ToLower
+                Dim sUserName As String = username.ToString.ToLower
                 Dim sPassword As String = packet.UserPassword
                 If InStr(sUserName, "@") > 0 Then 'UPN
                     UserDomain = sUserName
@@ -595,7 +585,7 @@ Public Class CICRadarR
             Exit Sub
         End If
 
-        AccessLog("Processing packet for user: " & username.GetString)
+        AccessLog("Processing packet for user: " & username.ToString)
 
         'If packetHash.ContainsKey(username.GetString & "_" & pass.GetString) Then
         '    Exit Sub
@@ -606,11 +596,11 @@ Public Class CICRadarR
         Dim existState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.State)
         AccessLog("Packet contains a state attribute? State=" & existState.ToString)
         If existState = True Then  ' Ok we have at packet with the State attribute set. Check if we can identify the authtentication packet.
-            Dim state As String = packet.Attributes.GetFirstAttribute(RadiusAttributeType.State).GetString
+            Dim state As String = packet.Attributes.GetFirstAttribute(RadiusAttributeType.State).ToString
             AccessLog("Packet contains a state attribute State=" & state)
             Dim UserDomain As String = ""
             'lets see if user login using upd or UPN name
-            Dim sUserName As String = username.GetString
+            Dim sUserName As String = username.ToString
             Dim sPassword As String = packet.UserPassword
 
             AccessLog("SMSToken supplied by user: " & sUserName)
@@ -646,7 +636,7 @@ Public Class CICRadarR
             Dim success As Boolean = False
             Dim UserDomain As String = ""
             'lets see if user login using upd or UPN name
-            Dim sUserName As String = username.GetString
+            Dim sUserName As String = username.ToString
             Dim sPassword As String = packet.UserPassword
             If InStr(sUserName, "@") > 0 Then 'UPN
                 UserDomain = sUserName
@@ -806,7 +796,7 @@ Public Class CICRadarR
 
 
 
-    Public Function GenerateCode() As String
+    Public Shared Function GenerateCode() As String
 
 
         Dim dummy As Integer = 0
