@@ -87,7 +87,7 @@ Public Class RADIUSPacket
         Get
             If mCode <> RadiusPacketCode.AccessRequest Then Return Nothing
             If mAttributes.GetFirstAttribute(RadiusAttributeType.UserName) Is Nothing Then Return Nothing
-            Return mAttributes.GetFirstAttribute(RadiusAttributeType.UserName).GetString
+            Return mAttributes.GetFirstAttribute(RadiusAttributeType.UserName).ToString
         End Get
     End Property
 
@@ -166,7 +166,7 @@ Public Class RADIUSPacket
         If username Is Nothing Then Return False
         Dim userpass As RADIUSAttribute = mAttributes.GetFirstAttribute(RadiusAttributeType.UserPassword)
         If userpass Is Nothing Then Return False
-        Dim password As String = authList.GetSharedSecret(username.GetString)
+        Dim password As String = authList.GetSharedSecret(username.ToString)
         If password = "" Then Return False
 
         Dim passlen As Integer = password.Length \ 16
@@ -193,7 +193,7 @@ Public Class RADIUSPacket
 
         hasher = Nothing
 
-        Return (ConvertToString(expect) = userpass.GetString)
+        Return (ConvertToString(expect) = userpass.ToString)
     End Function
 
     ''' <summary>

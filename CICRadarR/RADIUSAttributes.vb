@@ -198,7 +198,7 @@ Public Class RADIUSAttribute
         End Get
     End Property
 
-    Public Function GetString() As String
+    Public Overrides Function ToString() As String
         Return ConvertToString(mValue)
     End Function
 
