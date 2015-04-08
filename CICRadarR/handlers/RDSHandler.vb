@@ -122,6 +122,7 @@ Public Class RDSHandler
                 Accept()
             End If
         Catch ex As Exception
+            Console.WriteLine("Authentication failed. Sending reject.")
             mPacket.RejectAccessRequest()
         End Try
     End Sub
@@ -179,6 +180,7 @@ Public Class RDSHandler
         Dim password As String = mPacket.UserPassword
         Dim ldapDomain As String = CICRadarR.LDAPDomain
 
+        Console.WriteLine("Authenticating: LDAPPAth: " & "LDAP://" & ldapDomain & ", Username: " & packetUsername)
         Dim dirEntry As New DirectoryEntry("LDAP://" & ldapDomain, packetUsername, password)
 
         Dim obj As Object = dirEntry.NativeObject
@@ -196,12 +198,11 @@ Public Class RDSHandler
             search.PropertiesToLoad.Add(CICRadarR.ADMailField)
         End If
 
-        Console.WriteLine("Authenticating: LDAPPAth: " & "LDAP://" & ldapDomain & ", Username: " & packetUsername)
         Dim result = search.FindOne()
 
         If IsDBNull(result) Then
             Console.WriteLine("Failed to authenticate with Active Directory")
-            Throw New MissingUserException
+            Throw New MissingUser
         End If
 
         Return result

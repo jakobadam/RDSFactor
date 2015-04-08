@@ -67,6 +67,11 @@ Public Class RADIUSServer
             Dim hasher As System.Security.Cryptography.MD5 = System.Security.Cryptography.MD5.Create
             Dim hash() As Byte = {}
             Dim secret As String = mSecrets.GetSharedSecret(packet.EndPoint.Address.ToString)
+
+            If secret = Nothing Then
+                Throw New MissingRadiusSecret(packet.EndPoint.Address.ToString)
+            End If
+
             Array.Resize(hash, data.Length + secret.Length)
             data.CopyTo(hash, 0)
             ConvertToBytes(secret).CopyTo(hash, data.Length)
