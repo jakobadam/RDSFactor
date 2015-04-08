@@ -21,11 +21,6 @@ Public Class RDSHandler
     Private mIsSMSRequest As Boolean
     Private mIsEmailRequest As Boolean
 
-    Private mHasState As Boolean
-    Private mHasProxyState As Boolean
-    Private mProxyState As RADIUSAttribute
-    Private mState As RADIUSAttribute
-
     Private TSGWLaunchIdTimeStampHash As New Hashtable
     Private TSGWFirstLoginHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
     Private TSGWFirstLoginTimeStampHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
@@ -35,18 +30,16 @@ Public Class RDSHandler
     End Sub
 
     Public Sub ProcessRequest()
-        ExtractAttributes()
-
         If ValidPacket() = False Then
             Exit Sub
         End If
+
+        ExtractAttributes()
 
         If mIsAppLaunchRequest Then
             ProcessAppLaunchRequest()
         ElseIf mIsGatewayRequest Then
             ProcessGatewayRequest()
-        ElseIf mHasState Then
-            ProcessChallengeResponse()
         Else
             ProcessAccessRequest()
         End If
@@ -94,8 +87,10 @@ Public Class RDSHandler
             Exit Sub
         End If
 
-        If mHasProxyState Then
-            attributes.Add(mProxyState)
+        Dim hasProxyState = mPacket.Attributes.AttributeExists(RadiusAttributeType.ProxyState)
+        If hasProxyState Then
+            Dim proxyState = mPacket.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState)
+            attributes.Add(proxyState)
         End If
 
         Dim tValid = DateDiff(DateInterval.Minute, sessionTimestamp, Now)
@@ -111,6 +106,13 @@ Public Class RDSHandler
     End Sub
 
     Public Sub ProcessAccessRequest()
+        Dim hasState = mPacket.Attributes.AttributeExists(RadiusAttributeType.State)
+        If hasState Then
+            ' An access-request with a state is pr. definition a challange response.
+            ProcessChallengeResponse()
+            Exit Sub
+        End If
+
         Console.WriteLine("ProcessAccessRequest")
         Try
             Dim ldapResult = Authenticate()
@@ -122,12 +124,13 @@ Public Class RDSHandler
                 Accept()
             End If
         Catch ex As Exception
-            Console.WriteLine("Authentication failed. Sending reject.")
+            Console.WriteLine("Authentication failed. Sending reject. Error: " & ex.Message)
             mPacket.RejectAccessRequest()
         End Try
     End Sub
 
     Private Sub Accept()
+        Console.WriteLine("Accept")
         Dim sGUID As String = System.Guid.NewGuid.ToString()
         userSessions(packetUsername) = sGUID
         sessionTimestamps(packetUsername) = Now
@@ -141,9 +144,10 @@ Public Class RDSHandler
 
     Private Sub ProcessChallengeResponse()
         Console.WriteLine("ProcessChallengeResponse")
+        Dim state = mPacket.Attributes.GetFirstAttribute(RadiusAttributeType.State)
+
         Dim sid = EncDec.Encrypt(packetUsername & "_" & packetChallangeCode, CICRadarR.encCode)
-        Dim mStateStr = mState.ToString
-        If sid = mState.ToString Then
+        If sid = state.ToString Then
             Accept()
         Else
             mPacket.RejectAccessRequest()
@@ -181,6 +185,7 @@ Public Class RDSHandler
         Dim ldapDomain As String = CICRadarR.LDAPDomain
 
         Console.WriteLine("Authenticating: LDAPPAth: " & "LDAP://" & ldapDomain & ", Username: " & packetUsername)
+        Console.WriteLine("Passowrd: " & password)
         Dim dirEntry As New DirectoryEntry("LDAP://" & ldapDomain, packetUsername, password)
 
         Dim obj As Object = dirEntry.NativeObject
@@ -227,7 +232,7 @@ Public Class RDSHandler
     End Function
 
     Private Function ValidPacket()
-        If packetUsername Is Nothing Then
+        If mPacket.UserName Is Nothing Then
             Console.WriteLine("Not a valid radius packet.. No username present.. Drop!")
             Return False
         End If
@@ -235,18 +240,6 @@ Public Class RDSHandler
     End Function
 
     Private Sub ExtractAttributes()
-        mHasState = mPacket.Attributes.AttributeExists(RadiusAttributeType.State)
-        mHasProxyState = mPacket.Attributes.AttributeExists(RadiusAttributeType.ProxyState)
-
-        If mHasState Then
-            mState = mPacket.Attributes.GetFirstAttribute(RadiusAttributeType.State)
-            Console.WriteLine("State:" & mState.ToString)
-        End If
-        If mHasProxyState Then
-            mProxyState = mPacket.Attributes.GetFirstAttribute(RadiusAttributeType.ProxyState)
-            Console.WriteLine("ProxyState:" & mProxyState.ToString)
-        End If
-
         packetUsername = mPacket.UserName.ToLower
         packetPassword = mPacket.UserPassword
 
