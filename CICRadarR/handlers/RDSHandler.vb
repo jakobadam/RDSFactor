@@ -8,6 +8,8 @@ Public Class RDSHandler
     Private Shared userSidTokens As New Hashtable
     Private Shared tokenTimestamps As New Hashtable
 
+    Private Shared userLaunchTimestamps As New Hashtable
+
     Private mPacket As RADIUSPacket
     Private mUsername As String
     Private mPassword As String
@@ -70,28 +72,34 @@ Public Class RDSHandler
 
         ' When the packet is an AppLaunchRequest the password attribute contains the session id!
         Dim packetSessionId = mPassword
-
-        Dim sessionId = userSessions(mUsername)
+        Dim storedSessionId = userSessions(mUsername)
         Dim sessionTimestamp = sessionTimestamps(mUsername)
 
-        If sessionId = Nothing Or sessionTimestamp = Nothing Then
-            Console.WriteLine("Rejecting Access-Request to open app")
+        If storedSessionId = Nothing Or sessionTimestamp = Nothing Then
+            Console.WriteLine("User has no session. MUST re-authenticate!")
             mPacket.RejectAccessRequest()
             Exit Sub
         End If
 
-        Dim tValid = DateDiff(DateInterval.Minute, sessionTimestamp, Now)
-        If tValid < CICRadarR.SessionTimeOut Then
-            If packetSessionId = sessionId Then
-                Console.WriteLine("Accepting Request to open app")
-                ' Pro-long open window
-                sessionTimestamps(sessionId) = Now
+        If packetSessionId = storedSessionId Then
+            Dim minsSinceLastActivity = DateDiff(DateInterval.Minute, sessionTimestamp, Now)
+            If minsSinceLastActivity < CICRadarR.SessionTimeOut Then
+                Console.WriteLine("Opening window for: " & mUsername)
+                ' Pro-long session
+                sessionTimestamps(storedSessionId) = Now
+                ' Opening window
+                userLaunchTimestamps(mUsername) = Now
                 mPacket.AcceptAccessRequest()
                 Exit Sub
+            Else
+                Console.WriteLine("Session timed out -- User MUST re-authenticate")
+                userSessions.Remove(mUsername)
+                sessionTimestamps.Remove(mUsername)
             End If
+        Else
+            Console.WriteLine("Stored session id didn't match packet session id!")
         End If
 
-        Console.WriteLine("Token timed out")
         mPacket.RejectAccessRequest()
     End Sub
 
@@ -99,11 +107,11 @@ Public Class RDSHandler
         Console.WriteLine("Gateway Request for user: " & mUsername)
 
         Dim sessionId = userSessions(mUsername)
-        Dim sessionTimestamp = sessionTimestamps(mUsername)
+        Dim launchTimestamp = userLaunchTimestamps(mUsername)
         Dim attributes As New RADIUSAttributes
 
-        If sessionId = Nothing Or sessionTimestamp = Nothing Then
-            Console.WriteLine("No user session... User must re-authenticate")
+        If sessionId = Nothing Or launchTimestamp = Nothing Then
+            Console.WriteLine("User's has no lauch window. User must re-authenticate")
             mPacket.RejectAccessRequest()
             Exit Sub
         End If
@@ -114,16 +122,16 @@ Public Class RDSHandler
             attributes.Add(proxyState)
         End If
 
-        Dim tValid = DateDiff(DateInterval.Minute, sessionTimestamp, Now)
-        If tValid < CICRadarR.SessionTimeOut Then
-            Console.WriteLine("Accepting Reuqest to open app")
-            sessionTimestamps(sessionId) = Now
+        Dim secondsSinceLaunch = DateDiff(DateInterval.Second, launchTimestamp, Now)
+        If secondsSinceLaunch < CICRadarR.LaunchTimeOut Then
+            Console.WriteLine("Allowing access through gateway for user: " & mUsername & " -- closing window")
             mPacket.AcceptAccessRequest(attributes)
-            Exit Sub
         Else
-            Console.WriteLine("Session IDs did not match")
+            Console.WriteLine("Launch window has closed!")
         End If
 
+        ' close window
+        userLaunchTimestamps.Remove(mUsername)
     End Sub
 
     Public Sub ProcessAccessRequest()
