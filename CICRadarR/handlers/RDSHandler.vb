@@ -30,10 +30,6 @@ Public Class RDSHandler
     End Sub
 
     Public Sub ProcessRequest()
-        If ValidPacket() = False Then
-            Exit Sub
-        End If
-
         ExtractAttributes()
 
         If mIsAppLaunchRequest Then
@@ -229,14 +225,6 @@ Public Class RDSHandler
             Console.WriteLine("Unable to find correct email for user " & packetUsername)
         End If
         Return email
-    End Function
-
-    Private Function ValidPacket()
-        If mPacket.UserName Is Nothing Then
-            Console.WriteLine("Not a valid radius packet.. No username present.. Drop!")
-            Return False
-        End If
-        Return True
     End Function
 
     Private Sub ExtractAttributes()

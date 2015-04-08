@@ -118,11 +118,19 @@ Public Class CICRadarR
     ' will fire up the callback procedure. Invalid requests are dropped, per RFC.
     Private Sub ProcessPacket1812(ByVal packet As RADIUSPacket)
         'Console.WriteLine("packet " & Now)
-        ProcessPacket(radius1812, packet)
+        If packet.IsValid Then
+            ProcessPacket(radius1812, packet)
+        Else
+            Console.WriteLine("Packet is not valid. Dropping.")
+        End If
     End Sub
 
     Private Sub ProcessPacket1645(ByVal packet As RADIUSPacket)
-        ProcessPacket(radius1645, packet)
+        If packet.IsValid Then
+            ProcessPacket(radius1645, packet)
+        Else
+            Console.WriteLine("Packet is not valid. Dropping.")
+        End If
     End Sub
 
     Private Sub AccessLog(ByVal message)
