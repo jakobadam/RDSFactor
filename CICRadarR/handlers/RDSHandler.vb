@@ -9,17 +9,14 @@ Public Class RDSHandler
     Private Shared tokenTimestamps As New Hashtable
 
     Private mPacket As RADIUSPacket
-
-    Private packetUsername As String
-    Private packetPassword As String
-    Private packetSessionId As String
-    Private packetChallangeCode As String
+    Private mUsername As String
+    Private mPassword As String
 
     ' RDS specific values 
     Private mIsAppLaunchRequest As Boolean
     Private mIsGatewayRequest As Boolean
-    Private mIsSMSRequest As Boolean
-    Private mIsEmailRequest As Boolean
+    Private mUseSMSFactor As Boolean
+    Private mUseEmailFactor As Boolean
 
     Private TSGWLaunchIdTimeStampHash As New Hashtable
     Private TSGWFirstLoginHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
@@ -27,11 +24,37 @@ Public Class RDSHandler
 
     Public Sub New(packet As RADIUSPacket)
         mPacket = packet
+
+        mUsername = mPacket.UserName
+        mPassword = mPacket.UserPassword
+
+        CleanUsername()
+
+        For Each atts As RADIUSAttribute In mPacket.Attributes.GetAllAttributes(RadiusAttributeType.VendorSpecific)
+            Dim value As String = atts.GetVendorSpecific.VendorValue.ToString
+
+            Select Case UCase(value)
+                Case "LAUNCH"
+                    mIsAppLaunchRequest = True
+                Case "TSGATEWAY"
+                    mIsGatewayRequest = True
+                Case "SMS"
+                    mUseSMSFactor = True
+                Case "EMAIL"
+                    mUseEmailFactor = True
+            End Select
+        Next
+    End Sub
+
+    Private Sub CleanUsername()
+        ' RD Gateway sends EXAMPLE\username
+        ' RD Web sends example\username or - TODO - even example.com\username
+        If Not mUsername = Nothing Then
+            mUsername = mUsername.ToLower
+        End If
     End Sub
 
     Public Sub ProcessRequest()
-        ExtractAttributes()
-
         If mIsAppLaunchRequest Then
             ProcessAppLaunchRequest()
         ElseIf mIsGatewayRequest Then
@@ -45,8 +68,11 @@ Public Class RDSHandler
     Public Sub ProcessAppLaunchRequest()
         Console.WriteLine("ProcessAppLaunchRequest")
 
-        Dim sessionId = userSessions(packetUsername)
-        Dim sessionTimestamp = sessionTimestamps(packetUsername)
+        ' When the packet is an AppLaunchRequest the password attribute contains the session id!
+        Dim packetSessionId = mPassword
+
+        Dim sessionId = userSessions(mUsername)
+        Dim sessionTimestamp = sessionTimestamps(mUsername)
 
         If sessionId = Nothing Or sessionTimestamp = Nothing Then
             Console.WriteLine("Rejecting Access-Request to open app")
@@ -67,14 +93,13 @@ Public Class RDSHandler
 
         Console.WriteLine("Token timed out")
         mPacket.RejectAccessRequest()
-
     End Sub
 
     Public Sub ProcessGatewayRequest()
-        Console.WriteLine("Process Gateway Request")
+        Console.WriteLine("Gateway Request for user: " & mUsername)
 
-        Dim sessionId = userSessions(packetUsername)
-        Dim sessionTimestamp = sessionTimestamps(packetUsername)
+        Dim sessionId = userSessions(mUsername)
+        Dim sessionTimestamp = sessionTimestamps(mUsername)
         Dim attributes As New RADIUSAttributes
 
         If sessionId = Nothing Or sessionTimestamp = Nothing Then
@@ -128,8 +153,8 @@ Public Class RDSHandler
     Private Sub Accept()
         Console.WriteLine("Accept")
         Dim sGUID As String = System.Guid.NewGuid.ToString()
-        userSessions(packetUsername) = sGUID
-        sessionTimestamps(packetUsername) = Now
+        userSessions(mUsername) = sGUID
+        sessionTimestamps(mUsername) = Now
 
         Dim attributes As New RADIUSAttributes
         Dim guidAttribute As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, sGUID)
@@ -140,9 +165,12 @@ Public Class RDSHandler
 
     Private Sub ProcessChallengeResponse()
         Console.WriteLine("ProcessChallengeResponse")
+
+        ' When the packet is an Challange-Response the password attr. contains the token
+        Dim challangeCode = mPassword
         Dim state = mPacket.Attributes.GetFirstAttribute(RadiusAttributeType.State)
 
-        Dim sid = EncDec.Encrypt(packetUsername & "_" & packetChallangeCode, CICRadarR.encCode)
+        Dim sid = EncDec.Encrypt(mUsername & "_" & challangeCode, CICRadarR.encCode)
         If sid = state.ToString Then
             Accept()
         Else
@@ -152,15 +180,15 @@ Public Class RDSHandler
 
     Private Sub TwoFactorChallenge()
         Dim code = CICRadarR.GenerateCode
-        Dim sid = EncDec.Encrypt(packetUsername & "_" & code, CICRadarR.encCode) 'generate unique code
+        Dim sid = EncDec.Encrypt(mUsername & "_" & code, CICRadarR.encCode) 'generate unique code
         Console.WriteLine("Access Challange Code: " & code)
 
-        userSidTokens(packetUsername) = sid
-        tokenTimestamps(packetUsername) = Now
+        userSidTokens(mUsername) = sid
+        tokenTimestamps(mUsername) = Now
 
-        If mIsSMSRequest Then
+        If mUseSMSFactor Then
             Console.WriteLine("SMS: ")
-        ElseIf mIsEmailRequest Then
+        ElseIf mUseEmailFactor Then
             Console.WriteLine("Email: ")
         End If
 
@@ -173,24 +201,23 @@ Public Class RDSHandler
         attributes.Add(state)
 
         mPacket.SendAccessChallenge(attributes)
-
     End Sub
 
     Private Function Authenticate() As System.DirectoryServices.SearchResult
         Dim password As String = mPacket.UserPassword
         Dim ldapDomain As String = CICRadarR.LDAPDomain
 
-        Console.WriteLine("Authenticating: LDAPPAth: " & "LDAP://" & ldapDomain & ", Username: " & packetUsername)
+        Console.WriteLine("Authenticating: LDAPPAth: " & "LDAP://" & ldapDomain & ", Username: " & mUsername)
         Console.WriteLine("Passowrd: " & password)
-        Dim dirEntry As New DirectoryEntry("LDAP://" & ldapDomain, packetUsername, password)
+        Dim dirEntry As New DirectoryEntry("LDAP://" & ldapDomain, mUsername, password)
 
         Dim obj As Object = dirEntry.NativeObject
         Dim search As New DirectorySearcher(dirEntry)
 
-        If InStr(packetUsername, "@") > 0 Then
-            search.Filter = "(userPrincipalName=" + packetUsername + ")"
+        If InStr(mUsername, "@") > 0 Then
+            search.Filter = "(userPrincipalName=" + mUsername + ")"
         Else
-            search.Filter = "(SAMAccountName=" + Split(packetUsername, "\")(1) + ")"
+            search.Filter = "(SAMAccountName=" + Split(mUsername, "\")(1) + ")"
         End If
 
         search.PropertiesToLoad.Add("distinguishedName")
@@ -213,7 +240,7 @@ Public Class RDSHandler
         Dim mobile = result.Properties(CICRadarR.ADField)(0)
         mobile = Replace(mobile, "+", "")
         If mobile.Trim.Length = 0 Then
-            Console.WriteLine("Unable to find correct phone number for user " & packetUsername)
+            Console.WriteLine("Unable to find correct phone number for user " & mUsername)
         End If
         Return mobile
     End Function
@@ -222,37 +249,10 @@ Public Class RDSHandler
         Dim email = result.Properties(CICRadarR.ADMailField)(0)
 
         If InStr(email, "@") = 0 Then
-            Console.WriteLine("Unable to find correct email for user " & packetUsername)
+            Console.WriteLine("Unable to find correct email for user " & mUsername)
         End If
         Return email
     End Function
-
-    Private Sub ExtractAttributes()
-        packetUsername = mPacket.UserName.ToLower
-        packetPassword = mPacket.UserPassword
-
-        ' When the packet is an AppLaunchRequest the password attribute contains the session id!
-        packetSessionId = packetPassword
-
-        ' When the packet is an Challange-Response the password attr. contains the token
-        packetChallangeCode = packetPassword
-
-        For Each atts As RADIUSAttribute In mPacket.Attributes.GetAllAttributes(RadiusAttributeType.VendorSpecific)
-            Dim value As String = atts.GetVendorSpecific.VendorValue.ToString
-
-            Select Case UCase(value)
-                Case "LAUNCH"
-                    mIsAppLaunchRequest = True
-                Case "TSGATEWAY"
-                    mIsGatewayRequest = True
-                Case "SMS"
-                    mIsSMSRequest = True
-                Case "EMAIL"
-                    mIsEmailRequest = True
-            End Select
-        Next
-
-    End Sub
 
 End Class
 
