@@ -78,6 +78,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Conversion.vb" />
+    <Compile Include="exceptions\MissingUserException.vb" />
+    <Compile Include="handlers\RDSHandler.vb" />
     <Compile Include="VendorSpefic.vb" />
     <Compile Include="Crypto.vb" />
     <Compile Include="IniFileVb.vb" />
