@@ -1,0 +1,5 @@
+*.suo
+*.TMP
+*.Cache
+CICRadarR/bin/Debug/*.txt
+obj
