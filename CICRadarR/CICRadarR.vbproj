@@ -80,6 +80,7 @@
     <Compile Include="Conversion.vb" />
     <Compile Include="exceptions\MissingRadiusSecret.vb" />
     <Compile Include="exceptions\MissingUser.vb" />
+    <Compile Include="handlers\CitrixHandler.vb" />
     <Compile Include="handlers\RDSHandler.vb" />
     <Compile Include="VendorSpefic.vb" />
     <Compile Include="Crypto.vb" />
