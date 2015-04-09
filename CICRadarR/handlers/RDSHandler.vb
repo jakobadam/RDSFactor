@@ -20,10 +20,6 @@ Public Class RDSHandler
     Private mUseSMSFactor As Boolean
     Private mUseEmailFactor As Boolean
 
-    Private TSGWLaunchIdTimeStampHash As New Hashtable
-    Private TSGWFirstLoginHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
-    Private TSGWFirstLoginTimeStampHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
-
     Public Sub New(packet As RADIUSPacket)
         mPacket = packet
 
@@ -67,6 +63,16 @@ Public Class RDSHandler
 
     End Sub
 
+    ' Process the RDS specific App Launch request.
+    ' These requests are sent when an app is clicked in RD Web.
+    '
+    ' It's checked whether the session is still valid. In which case, a
+    ' window is opened for the user, where we allow the user to connect
+    ' through the gateway, an Accept-Access is returned and the RD Web
+    ' launches the RDP client.
+    '
+    ' NOTE: Requests contain the session GUID in the password attribute
+    ' of the packet.
     Public Sub ProcessAppLaunchRequest()
         Console.WriteLine("ProcessAppLaunchRequest")
 
@@ -87,7 +93,7 @@ Public Class RDSHandler
                 Console.WriteLine("Opening window for: " & mUsername)
                 ' Pro-long session
                 sessionTimestamps(storedSessionId) = Now
-                ' Opening window
+                ' Open launch window
                 userLaunchTimestamps(mUsername) = Now
                 mPacket.AcceptAccessRequest()
                 Exit Sub
@@ -103,6 +109,14 @@ Public Class RDSHandler
         mPacket.RejectAccessRequest()
     End Sub
 
+    ' Process the request from the Network Policy Server in the RDS Gateway.
+    ' These are sent when an RDP client tries to connect through the Gateway.
+    '
+    ' Accept-Access is returned when the user has a
+    ' * valid session; and a
+    ' * valid app launch window
+    '
+    ' The launch window is closed after this request.
     Public Sub ProcessGatewayRequest()
         Console.WriteLine("Gateway Request for user: " & mUsername)
 
@@ -137,7 +151,7 @@ Public Class RDSHandler
     Public Sub ProcessAccessRequest()
         Dim hasState = mPacket.Attributes.AttributeExists(RadiusAttributeType.State)
         If hasState Then
-            ' An access-request with a state is pr. definition a challange response.
+            ' An Access-Request with a state is pr. definition a challange response.
             ProcessChallengeResponse()
             Exit Sub
         End If
