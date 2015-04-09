@@ -130,11 +130,20 @@ Public Class CICRadarR
     Public Shared Sub AccessLog(ByVal message)
         If DEBUG = True Then
             UserAccessLog.WriteLog(Now & ": DEBUG: " & message)
+
+            ' Also write to the console if not a service
+            If Environment.UserInteractive Then
+                Console.WriteLine(Now & ": DEBUG: " & message)
+            End If
         End If
     End Sub
 
     Public Shared Sub ServerLog(ByVal message)
         Log.WriteLog(Now & ":" & message)
+        ' Also write to the console if not a service
+        If Environment.UserInteractive Then
+            Console.WriteLine(Now & message)
+        End If
     End Sub
 
     Private Sub ProcessPacket(ByVal server As RADIUSServer, ByVal packet As RADIUSPacket)
