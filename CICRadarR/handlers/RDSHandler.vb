@@ -209,9 +209,11 @@ Public Class RDSHandler
         tokenTimestamps(mUsername) = Now
 
         If mUseSMSFactor Then
-            Console.WriteLine("SMS: ")
-        ElseIf mUseEmailFactor Then
-            Console.WriteLine("Email: ")
+            Console.WriteLine("TODO: Send SMS")
+        End If
+
+        If mUseEmailFactor Then
+            Console.WriteLine("TODO: Send Email")
         End If
 
         Dim attributes As New RADIUSAttributes
@@ -230,7 +232,6 @@ Public Class RDSHandler
         Dim ldapDomain As String = CICRadarR.LDAPDomain
 
         Console.WriteLine("Authenticating: LDAPPAth: " & "LDAP://" & ldapDomain & ", Username: " & mUsername)
-        Console.WriteLine("Passowrd: " & password)
         Dim dirEntry As New DirectoryEntry("LDAP://" & ldapDomain, mUsername, password)
 
         Dim obj As Object = dirEntry.NativeObject
