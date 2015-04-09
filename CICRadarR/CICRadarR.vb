@@ -46,7 +46,7 @@ Public Class CICRadarR
     Private TSGWFirstLoginHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
     Private TSGWFirstLoginTimeStampHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
     Public Shared SessionTimeOut As Integer = 30 ' in minutes
-    Private LaunchTimeOut As Integer = 30 ' in seconds
+    Public Shared LaunchTimeOut As Integer = 30 ' in seconds
     Private EnableSMS As Boolean = False
     Private EnableEmail As Boolean = False
 
@@ -118,19 +118,11 @@ Public Class CICRadarR
     ' will fire up the callback procedure. Invalid requests are dropped, per RFC.
     Private Sub ProcessPacket1812(ByVal packet As RADIUSPacket)
         'Console.WriteLine("packet " & Now)
-        If packet.IsValid Then
-            ProcessPacket(radius1812, packet)
-        Else
-            Console.WriteLine("Packet is not valid. Dropping.")
-        End If
+        ProcessPacket(radius1812, packet)
     End Sub
 
     Private Sub ProcessPacket1645(ByVal packet As RADIUSPacket)
-        If packet.IsValid Then
-            ProcessPacket(radius1645, packet)
-        Else
-            Console.WriteLine("Packet is not valid. Dropping.")
-        End If
+        ProcessPacket(radius1645, packet)
     End Sub
 
     Private Sub AccessLog(ByVal message)
@@ -144,6 +136,11 @@ Public Class CICRadarR
     End Sub
 
     Private Sub ProcessPacket(ByVal server As RADIUSServer, ByVal packet As RADIUSPacket)
+        If Not packet.IsValid Then
+            Console.WriteLine("Packet is not valid. Discarding.")
+            Exit Sub
+        End If
+
         Dim muuh As New VendorSpecificAttribute(VendorSpecificType.Generic, "LAUNCH")
         Dim atts As New RADIUSAttributes
 
