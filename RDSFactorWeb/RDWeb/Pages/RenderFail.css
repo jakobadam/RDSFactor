@@ -1,0 +1,6 @@
+/* 
+  These rules should only take effect when some failure
+  has occurred to prevent normal XSLT processing
+*/
+RDWAPage > * {display:none}
+RenderFailureMessage {display:block}

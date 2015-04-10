@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema targetNamespace="http://schemas.microsoft.com/ts/2007/05/tswf" elementFormDefault="qualified" xmlns="http://schemas.microsoft.com/ts/2007/05/tswf" xmlns:mstns="http://schemas.microsoft.com/ts/2007/05/tswf" xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.1">
+  <xs:element name="ResourceCollection" type="ResourceCollectionType" />
+  <xs:complexType name="ResourceCollectionType">
+    <xs:sequence>
+      <xs:element name="Publisher" type="PublisherType" minOccurs="1" maxOccurs="unbounded">
+        <xs:key name="ResourceIDKey">
+          <xs:selector xpath="mstns:Resources/mstns:Resource" />
+          <xs:field xpath="@ID" />
+        </xs:key>
+        <xs:key name="TerminalServerIDKey">
+          <xs:selector xpath="mstns:TerminalServers/mstns:TerminalServer" />
+          <xs:field xpath="@ID" />
+        </xs:key>
+        <xs:keyref name="ResourceToTerminalServerRef" refer="TerminalServerIDKey">
+          <xs:selector xpath="mstns:Resources/mstns:Resource/mstns:HostingTerminalServers/mstns:HostingTerminalServer/mstns:TerminalServerRef" />
+          <xs:field xpath="@Ref" />
+        </xs:keyref>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="SchemaVersion" type="xs:string" use="required" />
+    <xs:attribute name="PubDate" type="xs:dateTime" />
+    <xs:anyAttribute processContents="lax" />
+  </xs:complexType>
+  <xs:complexType name="PublisherType">
+    <xs:sequence>
+      <xs:element name="SubFolders" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Folder" type="FolderType" minOccurs="0" maxOccurs="unbounded" />
+          </xs:sequence>
+          <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="Resources">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Resource" type="ResourceType" minOccurs="0" maxOccurs="unbounded" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="TerminalServers">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="TerminalServer" type="TerminalServerType" minOccurs="0" maxOccurs="unbounded" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax" />
+    </xs:sequence>
+    <xs:attribute name="LastUpdated" type="xs:dateTime" />
+    <xs:attribute name="Name" type="xs:string" />
+    <xs:attribute name="ID" type="xs:string" />
+    <xs:attribute name="Description" type="xs:string" />
+    <xs:attribute name="SupportsReconnect" type="xs:boolean" />
+    <xs:attribute name="DisplayFolder" type="xs:string"/>
+    <xs:anyAttribute processContents="lax" />
+  </xs:complexType>
+  <!-- Resource and related Types -->
+  <xs:complexType name="ResourceType">
+    <xs:sequence>
+      <xs:element name="Icons" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="IconRaw" type="IconType" />
+            <xs:element name="Icon16" type="IconType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="Icon32" type="IconType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="Icon48" type="IconType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="Icon64" type="IconType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="Icon100" type="IconType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="Icon256" type="IconType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="Icon" type="IconType" minOccurs="0" maxOccurs="unbounded" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="FileExtensions" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="FileExtension" type="FileExtensionType" minOccurs="0" maxOccurs="unbounded" />
+          </xs:sequence>
+          <xs:anyAttribute processContents="lax" />
+        </xs:complexType> 
+      </xs:element>
+      <xs:element name="Folders" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Folder" type="FolderType" minOccurs="0" maxOccurs="unbounded" />
+          </xs:sequence>
+          <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="HostingTerminalServers">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="HostingTerminalServer" type="HostingTerminalServerType" minOccurs="0" maxOccurs="unbounded" />
+          </xs:sequence>
+          <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+      </xs:element>
+      <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax" />
+    </xs:sequence>
+    <xs:attribute name="ID" type="xs:string" use="required" />
+    <xs:attribute name="Alias" type="xs:string" />
+    <xs:attribute name="Title" type="xs:string" />
+    <xs:attribute name="LastUpdated" type="xs:dateTime" />
+    <xs:attribute name="Type">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="Desktop" />
+          <xs:enumeration value="RemoteApp" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="RequiredCommandLine" type="xs:string" />
+    <xs:attribute name="ExecutableName" type="xs:string" />
+    <xs:attribute name="ShowByDefault" type="xs:boolean" />
+    <xs:anyAttribute processContents="lax" />
+  </xs:complexType>
+  <xs:complexType name="IconType">
+    <xs:sequence>
+      <xs:element name="FileContent" type="xs:string" minOccurs="0" maxOccurs="1" />
+    </xs:sequence>
+    <xs:attribute name="Dimensions" type="xs:string" />
+    <xs:attribute name="FileType" type="xs:string" />
+    <xs:attribute name="FileURL" type="xs:string" />
+    <xs:attribute name="Index" type="xs:integer" />
+    <xs:anyAttribute processContents="lax" />
+  </xs:complexType>
+  <xs:complexType name="FileExtensionType">
+    <xs:sequence>
+      <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax" />
+    </xs:sequence>
+    <xs:attribute name="Name" type="xs:string" />
+    <xs:attribute name="PrimaryHandler" type="xs:string" />
+    <xs:anyAttribute processContents="lax" />
+  </xs:complexType>
+  <xs:element name="FileAssociationIcons">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="IconRaw" type="IconType" />
+        <xs:element name="Icon16" type="IconType" minOccurs="0" maxOccurs="1" />
+        <xs:element name="Icon32" type="IconType" minOccurs="0" maxOccurs="1" />
+        <xs:element name="Icon48" type="IconType" minOccurs="0" maxOccurs="1" />
+        <xs:element name="Icon64" type="IconType" minOccurs="0" maxOccurs="1" />
+        <xs:element name="Icon100" type="IconType" minOccurs="0" maxOccurs="1" />
+        <xs:element name="Icon256" type="IconType" minOccurs="0" maxOccurs="1" />
+        <xs:element name="Icon" type="IconType" minOccurs="0" maxOccurs="unbounded" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:complexType name="TerminalServerRefType">
+    <xs:attribute name="Ref" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="FolderType">
+    <xs:attribute name="Name" type="xs:string" use="required" />
+    <xs:anyAttribute processContents="lax" />
+  </xs:complexType>
+  <xs:complexType name="ResourceFileType">
+    <xs:sequence>
+      <xs:element name="Content" type="xs:string" minOccurs="0" maxOccurs="1" />
+    </xs:sequence>
+    <xs:attribute name="URL" type="xs:string" />
+    <xs:attribute name="FileExtension" type="xs:string" default=".rdp" />
+    <xs:anyAttribute processContents="lax" />
+  </xs:complexType>
+  <xs:complexType name="HostingTerminalServerType">
+    <xs:sequence>
+      <xs:element name="ResourceFile" type="ResourceFileType" minOccurs="0" maxOccurs="1" />
+      <xs:element name="TerminalServerRef" type="TerminalServerRefType" />
+      <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax" />
+    </xs:sequence>
+    <xs:anyAttribute processContents="lax" />
+  </xs:complexType>
+  <!-- TerminalServer and related Types -->
+  <xs:complexType name="TerminalServerType">
+    <xs:attribute name="ID" type="xs:string" use="required" />
+    <xs:attribute name="Name" type="xs:string" />
+    <xs:attribute name="LastUpdated" type="xs:dateTime" />
+    <xs:anyAttribute processContents="lax" />
+  </xs:complexType>
+</xs:schema>

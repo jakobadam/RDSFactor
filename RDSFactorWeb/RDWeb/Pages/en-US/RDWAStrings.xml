@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<rdwastr:strings xmlns:rdwastr="urn:microsoft.com:rdwastrings">
+  <string id="PageTitle">RD Web Access</string>
+  <string id="NoScriptWarning">
+    <p id="NoScript1">RD Web Access requires JScript. This Web browser either does not support JScript, or scripts are being blocked.</p>
+    <br/>
+    <br/>
+    <p id="NoScript2">To find out whether your browser supports JScript, or to allow scripts, see the browser's online Help.</p>
+  </string>
+  <string id="HeadingRDWA">RD Web Access</string>
+  <string id="HeadingApplicationName">RemoteApp and Desktop Connection</string>
+  <string id="Help">Help</string>
+  <string id="SignOut">Sign out</string>
+  <string id="SearchingForApps">Searching for available RemoteApp programs... </string>
+  <string id="CurrentFolder">Current folder: </string>
+  <string id="ParentFolder">Up</string>
+  <string id="OptimizeMyExperience">Optimize my experience for a LAN network when connecting to the computer or application.</string>
+  <string id="PrivateComputer">I am using a private computer that complies with my organization's security policy.</string>
+  <string id="MoreInformation">More information...</string>
+  <string id="PrivateMore">By selecting this option you can save your credentials so that they can be used in the future when connecting to these programs. Before you select this option, please ensure that saving your credentials is in compliance with your organization's security policy.</string>
+  <string id="HideMore">Hide additional information...</string>
+</rdwastr:strings>

@@ -1,0 +1,284 @@
+﻿
+#content
+{
+  position:relative;
+  height:490px;
+  background-color:white;
+  color:Black;
+  vertical-align:top;
+  margin:0px;
+  padding:5px;
+}
+
+#homemain
+{
+    position:relative;
+    top:0px;
+    width:900px;
+    margin-top:0px;
+    padding:0px;
+    background-color:Transparent;
+    text-align:left;
+    z-index:0;
+}
+
+body
+{
+  background-image: url(../images/bg_globe_01.jpg);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-position: center center;
+  margin-left: 0px;
+  margin-top: 0px;
+  margin-right: 0px;
+  margin-bottom: 0px;
+  background-color: #7fa4bf;
+}
+
+body,td,th,select
+{
+  font-family: "Segoe UI", "Calibri", Tahoma, sans-serif;
+  font-size: 12px;
+  color: #000000;
+}
+
+.pageBorder
+{
+  border: 1px solid #444444;
+}
+
+.textInputField
+{
+  font-family: "Segoe UI", "Calibri", Tahoma, sans-serif;
+  font-size: 12px;
+  color: #000000;
+  background-color: #EAF4FF;
+}
+
+.formButton
+{
+  font-family: "Segoe UI", "Calibri", Tahoma, sans-serif;
+  font-size: 12px;
+  color: #000000;
+}
+
+/* Style for the Apply button in the Web-Part Edit Zone */
+#ApplyButton
+{
+  font-family: "Segoe UI", "Calibri", Tahoma, sans-serif;
+  font-size: 12px;
+  color: #000000;
+}
+
+
+.wrng
+{
+  color: #C00000
+}
+
+.expl
+{
+  color: #336699
+}
+
+
+.headingCompanyName
+{
+  font-size: 24px;
+  font-family: "Segoe UI", "Calibri", Tahoma, sans-serif;
+}
+
+
+td.cellMSLogo > table
+{
+  margin-right:0;
+  margin-left:auto;
+}
+
+td.cellSecondaryNavigationBar > table
+{
+  margin-right:0;
+  margin-left:auto;
+}
+
+.headingApplicationName
+{
+  font-size: 12px;
+}
+
+.headingTSWA
+{
+  font-size: 11px;
+}
+
+.headingForActivePageInNavigationBar
+{
+  font-size: 14px;
+  font-weight: bold;
+  color: #336699;
+}
+
+.linkPrimaryNavigiationBar a
+{
+  color: #000000;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.linkPrimaryNavigiationBar a:hover
+{
+  color: #336699;
+  text-decoration: underline;
+}
+
+
+.linkSecondaryNavigiationBar a
+{
+  color: #000000;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.linkSecondaryNavigiationBar a:hover
+{
+  color: #336699;
+  text-decoration: underline;
+}
+
+.dividerInNavigationBar
+{
+  color: #CCCCCC;
+}
+
+.tswa_appboard
+{
+    background-color:transparent;
+    position:relative;
+    top:18px;
+    font-size:12px;
+}
+
+.tswa_boss, .tswa_folder_boss, .tswa_up_boss
+{
+    position:relative;
+    width:83px;
+    height:90px;
+    margin:0px;
+    padding:0px;
+    background-color:Transparent;
+    text-align:center;
+    vertical-align:middle;
+    float:left;
+}
+
+.tswa_boss_spacer
+{
+    margin: 0px;
+    padding: 12px 1px 0px 4px;
+}
+
+.tswa_boss_img
+{
+    border:none;
+}
+
+.tswa_iconimg
+{
+    position:relative;
+    margin:0px;
+    top:-4px;
+    width:32px;
+    height:32px;
+    text-align:center;
+}
+
+.tswa_ttext
+{
+    position:relative;
+    top:-1px;
+    width:70px;
+    height:42px;
+    font-size:11px;
+    line-height:13px;
+    text-overflow:ellipsis;
+    overflow:hidden;
+    text-align:center;
+}
+
+.tswa_vis0
+{
+     visibility:hidden;
+     position:absolute;
+     top:0px;
+     left:3px;
+     height:85px;
+     width:77px;
+     background-color:Transparent;
+}
+
+.tswa_vis1
+{
+    visibility:visible;
+    position:absolute;
+    top:0px;
+    left:3px;
+    height:85px;
+    width:77px;
+    background-color:Transparent;
+}
+
+.tswa_PublicCheckboxMore
+{
+    position:relative;
+    font-size:12px;
+}
+
+.tswa_PublicCheckboxLess
+{
+    position:relative;
+    font-size:12px;
+}
+
+.tswa_ShowOptimizeExperienceShiftedUp
+{
+    position:relative;
+    font-size:12px;
+}
+
+.tswa_ShowOptimizeExperience
+{
+    position:relative;
+    font-size:12px;
+}
+
+.tswa_error_icon
+{
+    background-color:Transparent;
+    font-size:17px;
+    line-height:32px;
+    height:32px;
+    width:300px;
+    filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(enabled=true, src='../images/erroricon.png',sizingMethod='crop');
+    margin-left:10px;
+    padding-left:45px
+}
+
+.tswa_error_msg
+{
+    font-size:12px;
+    margin-left:55px;
+    padding-right:10px;
+}
+
+.tswa_CurrentFolderLabel
+{
+    font-family: "Segoe UI", "Calibri", Tahoma, sans-serif;
+    color: #000000;
+    font-weight: bold;
+    font-size: 14px;
+    text-decoration : none;
+    margin-left: 25px;
+    margin-bottom: 10px;
+}
