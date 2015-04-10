@@ -1,4 +1,5 @@
 ﻿Imports System.DirectoryServices
+Imports RADAR
 
 ' TODO: I don't use this! It's a leftover, moved out of the way
 ' from the CICRadarR.vb

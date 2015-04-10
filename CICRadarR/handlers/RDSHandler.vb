@@ -1,4 +1,5 @@
 ﻿Imports System.DirectoryServices
+Imports RADAR
 
 Public Class RDSHandler
 
@@ -227,7 +228,7 @@ Public Class RDSHandler
         attributes.Add(attr)
         attributes.Add(state)
 
-        mPacket.SendAccessChallenge(attributes)
+        mPacket.SendAccessChallange(attributes)
     End Sub
 
     Private Function Authenticate() As System.DirectoryServices.SearchResult

@@ -7,7 +7,7 @@ Imports System.Security.Cryptography
 Imports System.Text
 Imports System
 Imports System.Net.Mail
-
+Imports RADAR
 
 Public Class CICRadarR
 
@@ -15,7 +15,9 @@ Public Class CICRadarR
     Public Shared ADField As String = ""
     Public Shared ADMailField As String = ""
     Public Shared EnableOTP As Boolean
-    ' TODO: What this?
+
+    ' Shared key: used for challange encryption
+    ' TODO: Fix
     Public Shared encCode As String = "gewsyy#sjs2!"
 
     Private Shared DEBUG As Boolean
@@ -163,8 +165,6 @@ Public Class CICRadarR
     End Sub
 
     Public Shared Function GenerateCode() As String
-
-
         Dim dummy As Integer = 0
 
         Dim ordRand As New System.Random()

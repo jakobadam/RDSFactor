@@ -1,0 +1,3 @@
+[submodule "radar-radius"]
+	path = radar-radius
+	url = https://github.com/jakobadam/radar-radius

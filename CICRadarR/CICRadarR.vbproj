@@ -77,12 +77,10 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Conversion.vb" />
     <Compile Include="exceptions\MissingRadiusSecret.vb" />
     <Compile Include="exceptions\MissingUser.vb" />
     <Compile Include="handlers\CitrixHandler.vb" />
     <Compile Include="handlers\RDSHandler.vb" />
-    <Compile Include="VendorSpefic.vb" />
     <Compile Include="Crypto.vb" />
     <Compile Include="IniFileVb.vb" />
     <Compile Include="Log.vb" />
@@ -107,16 +105,12 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="NASAuthList.vb" />
     <Compile Include="ProjectInstaller.Designer.vb">
       <DependentUpon>ProjectInstaller.vb</DependentUpon>
     </Compile>
     <Compile Include="ProjectInstaller.vb">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="RADIUSAttributes.vb" />
-    <Compile Include="RADIUSPacket.vb" />
-    <Compile Include="RADIUSServer.vb" />
     <Compile Include="SmsClass.vb" />
     <Compile Include="TestService.Designer.vb">
       <DependentUpon>TestService.vb</DependentUpon>
@@ -124,7 +118,6 @@
     <Compile Include="TestService.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="UDPServer.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="CICRadarR.resx">
@@ -154,6 +147,12 @@
       <CustomToolNamespace>My</CustomToolNamespace>
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\radar-radius\RADAR\RADAR.vbproj">
+      <Project>{3ab08a4e-c4fa-4571-a5d4-32bba807c31d}</Project>
+      <Name>RADAR</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
