@@ -4,7 +4,6 @@ var strTransparentGif = "../images/clear.gif";
 var g_objWorkspace = null;
 var g_activeXSSOMode = false;
 var g_activeXSSOModeSet = false;
-var g_workspaceObjectVersion = -1;
 var bFormAuthenticationMode = false;
 var iSessionTimeout = 0;
 var iConstSecToMilliSec = 1000;
@@ -94,17 +93,136 @@ function onAuthenticatedPageload(e)
 
 function onClickHelp()
 {
-    if ( helpPopup == null || helpPopup.closed == true )
-    {
-        helpPopup = window.open( sHelpSource,
-                                 "_blank",
-                                 "height=600px, width=600px, left=600, top=150, toolbar=no, resizable=yes, scrollbars=yes, menubar=no" );
+	  if ( helpPopup == null || helpPopup.closed == true )
+	  {
+	      helpPopup = window.open( sHelpSource,
+	                               "_blank",
+	                               "height=600px, width=600px, left=600, top=150, toolbar=no, resizable=yes, scrollbars=yes, menubar=no" );
     }
     else
     {
         helpPopup.close();
         helpPopup = null;
     }
+}
+
+function onLoginFormSubmit()
+{
+    var bStopSubmission = false;
+    var iErrorCode;
+    var objWorkspace = null;
+    var objForm = document.getElementById("FrmLogin");
+    var strDomainName = null;
+    var strDomainUserName = "";
+    var strPassword = "";
+    var strWorkspaceId = "";
+    var strWorkspaceFriendlyName = "";
+    var strRedirectorName = "";
+    var strRDPCertificates = "";
+    var bPrivateMode = document.getElementById("rdoPrvt").checked;
+    var strTimeout = "0";
+
+    hideElement(document.getElementById("trErrorWorkSpaceInUse"));
+    hideElement(document.getElementById("trErrorWorkSpaceDisconnected"));
+    hideElement(document.getElementById("trErrorIncorrectCredentials"));
+    hideElement(document.getElementById("trErrorDomainNameMissing"));
+    hideElement(document.getElementById("trErrorUnauthorizedAccess"));
+    hideElement(document.getElementById("trErrorServerConfigChanged"));
+
+    if ( objForm != null )
+    {
+        strDomainUserName = objForm.elements["DomainUserName"].value;
+        strPassword = objForm.elements["UserPass"].value;
+        strWorkspaceId = objForm.elements["WorkSpaceID"].value;
+        strRDPCertificates = objForm.elements["RDPCertificates"].value;
+        strWorkspaceFriendlyName = objForm.elements["WorkspaceFriendlyName"].value;
+        strRedirectorName = objForm.elements["RedirectorName"].value;
+
+        if( bPrivateMode )
+        {
+            strTimeout =  objForm.elements["PrivateModeTimeout"].value;
+        }
+        else
+        {
+            strTimeout =  objForm.elements["PublicModeTimeout"].value;
+        }
+
+        if ( -1 != strDomainUserName.indexOf("\\") )
+        {
+            strDomainName = strDomainUserName.substring( 0, strDomainUserName.indexOf("\\") );
+        }
+        else if ( -1 != strDomainUserName.indexOf("@") )
+        {
+            strDomainName = strDomainUserName.substring( strDomainUserName.indexOf("@") + 1, strDomainUserName.length );
+        }
+
+    }
+
+    if ( strDomainUserName == null || strDomainUserName == "" ||
+         strPassword == null || strPassword == "" )
+    {
+        showElement(document.getElementById("trErrorIncorrectCredentials"));
+        bStopSubmission = true;
+    }
+    else if ( strDomainName == null || strDomainName == "" || strDomainName == "." )
+    {
+        showElement(document.getElementById("trErrorDomainNameMissing"));
+        bStopSubmission = true;
+    }
+    else
+    {
+        if (strWorkspaceId != null &&
+            strWorkspaceId != "" && 
+            GetActiveXSSOMode())
+        {
+            try
+            {
+                objWorkspace = GetWorkspaceObject2();
+
+                if (objWorkspace != null)
+                {
+                    objWorkspace.StartWorkspaceEx(
+                        strWorkspaceId,
+                        strWorkspaceFriendlyName,
+                        strRedirectorName,
+                        strDomainUserName,
+                        strPassword,
+                        strRDPCertificates,
+                        parseInt(strTimeout),
+                        0 );
+                }
+                else
+                {
+                    objWorkspace = GetWorkspaceObject();
+
+                    objWorkspace.StartWorkspace(
+                        strWorkspaceId,
+                        strDomainUserName,
+                        strPassword,
+                        strRDPCertificates,
+                        parseInt(strTimeout),
+                        0);
+                }
+            }
+            catch (objException)
+            {
+                objWorkspace = null;
+                iErrorCode = (objException.number & 0xFFFF);
+
+                //
+                // 183 = ERROR_ALREADY_EXISTS.
+                //
+                if ( iErrorCode == 183 )
+                {
+                    showElement(document.getElementById("trErrorWorkSpaceInUse"));
+                    bStopSubmission = true;
+                }
+            }
+        }
+    }
+
+    // return false to stop form submission
+    return !bStopSubmission;
 }
 
 function onAutoDisconnect()
@@ -140,7 +258,7 @@ function onAutoDisconnect()
         }
     }
 
-    window.location = strBaseUrl + "LogOff.aspx" + window.location.search;
+    window.location = strBaseUrl + "LogOff.aspx";
 }
 
 function onUserDisconnect()
@@ -171,7 +289,7 @@ function onUserDisconnect()
         }
     }
 
-    window.location = strBaseUrl + "LogOff.aspx" + window.location.search;
+    window.location = strBaseUrl + "LogOff.aspx";
 }
 
 function onClickSecurity() {
@@ -298,6 +416,66 @@ function getCookieCrumbValue(strCookieContents, strCookieCrumbName)
     return strCookieCrumbValue;
 }
 
+function onLoginPageLoad(e)
+{
+    var strDomainUserName = ""; // CrumbName: Name
+    var strMachineType = "";    // CrumbName: MachineType
+    var strWorkSpaceID = "";    // CrumbName: WorkSpaceID
+    var strCookieContents = "";
+    var iIndex;
+    var bActiveXSSOMode = GetActiveXSSOMode(); // as a side-effect, this caches the workspace ActiveX object
+
+    onPageload(e);  // call the parent event
+
+    if (bActiveXSSOMode) {
+
+        document.getElementById("tablePublicOption").style.display = "";
+        document.getElementById("tablePrivateOption").style.display = "";
+        document.getElementById("spanToggleSecExplanation").style.display = "";
+        document.getElementById("rdoPblc").checked = true;
+    }
+    else {
+
+        document.getElementById("trPrvtWrnNoAx").style.display = "";
+    }
+    onClickSecurity();
+
+    strCookieContents = getCookieContents(strTSWACookieName);
+
+    if ( null != strCookieContents )
+    {
+        strDomainUserName = decodeURIComponent( getCookieCrumbValue(strCookieContents, "Name") );
+        strMachineType = getCookieCrumbValue(strCookieContents, "MachineType");
+        strWorkSpaceID = decodeURIComponent( getCookieCrumbValue(strCookieContents, "WorkSpaceID") );
+
+        if ( strMachineType != "" &&
+             strMachineType == "private")
+        {
+            document.getElementById("DomainUserName").value = strDomainUserName;
+            document.getElementById("rdoPrvt").checked = "private";
+            onClickSecurity();
+        }
+
+        //
+        // Set focus on UserName or Password field.
+        //
+        if ( strDomainUserName != "" )
+        {
+            document.getElementById("UserPass").focus();
+        }
+        else
+        {
+            document.getElementById("DomainUserName").focus();
+        }
+    }
+    else
+    {
+         document.getElementById("DomainUserName").focus();
+    }
+
+
+}
+
 function onAuthenticated()
 {
     var iErrorCode;
@@ -324,11 +502,6 @@ function onAuthenticated()
             return;
         }
 
-        var strQueryStringPreamble = "?";
-        if (window.location.search) {
-            strQueryStringPreamble = window.location.search + "&";
-        }
-
         if ( strDomainUserName.toLowerCase() == strLoggedOnDomainUserName.toLowerCase()) {
             if (GetActiveXSSOMode()) {
                 try {
@@ -349,13 +522,13 @@ function onAuthenticated()
                         // 183 = ERROR_ALREADY_EXISTS.
                         //
                         if (iErrorCode == 183) {
-                            window.location = strBaseUrl + "LogOff.aspx" + strQueryStringPreamble + "Error=WkSInUse";
+                            window.location = strBaseUrl + "LogOff.aspx?Error=WkSInUse";
                         }
                         //
                         // 1168 = ERROR_NOT_FOUND.
                         //
                         if (iErrorCode == 1168) {
-                            window.location = strBaseUrl + "LogOff.aspx" + strQueryStringPreamble + "Error=WkSDisconnected";
+                            window.location = strBaseUrl + "LogOff.aspx?Error=WkSDisconnected";
                         }
                     }
                 }
@@ -366,43 +539,38 @@ function onAuthenticated()
             //
             // Ideally check workspace state before redirecting; if it has been authenticatd as well.
             //
-            window.location = strBaseUrl + "LogOff.aspx" + strQueryStringPreamble + "Error=WkSInUse";
+            window.location = strBaseUrl + "LogOff.aspx?Error=WkSInUse";
         }
     }
 }
 
 function GetWorkspaceObject()
 {
+    var objClientShell = null;
+
     if( g_objWorkspace == null )
     {
-        var objClientShell = new ActiveXObject("MsRdpWebAccess.MsRdpClientShell");
-        
-        g_objWorkspace = objClientShell.MsRdpWorkspace3;
-        if(g_objWorkspace != null)
+        g_objWorkspace = GetWorkspaceObject2();
+
+        if (g_objWorkspace == null)
         {
-            g_workspaceObjectVersion = 3;
-        }
-        else
-        {
-            g_objWorkspace = objClientShell.MsRdpWorkspace2;
-            if(g_objWorkspace != null)
-            {
-                g_workspaceObjectVersion = 2;
-            }
-            else
-            {
-                g_objWorkspace = objClientShell.MsRdpWorkspace;
-                if(g_objWorkspace != null)
-                {
-                    g_workspaceObjectVersion = 1;
-                }
-                else
-                {
-                    g_workspaceObjectVersion = 0;
-                }
-            }
+            objClientShell = new ActiveXObject("MsRdpWebAccess.MsRdpClientShell");
+            g_objWorkspace = objClientShell.MsRdpWorkspace;
         }
     }
+
+    return g_objWorkspace;
+}
+
+function GetWorkspaceObject2()
+{
+    var objClientShell = null;
+
+    g_objWorkspace = null;
+
+    objClientShell = new ActiveXObject("MsRdpWebAccess.MsRdpClientShell");
+
+    g_objWorkspace = objClientShell.MsRdpWorkspace2;
 
     return g_objWorkspace;
 }
@@ -424,19 +592,6 @@ function GetActiveXSSOMode() {
     }
 
     return g_activeXSSOMode;
-}
-
-function GetWorkspaceObjectVersion()
-{
-    if (g_workspaceObjectVersion == -1) {
-        try {
-            GetWorkspaceObject();
-        }
-        catch (objException) {
-        }
-    }
-
-    return g_workspaceObjectVersion;
 }
 
 function ApplyPngTransparency()

@@ -34,7 +34,7 @@
     public bool bShowOptimizeExperience = false, bOptimizeExperienceState = false;
     public AuthenticationMode eAuthenticationMode = AuthenticationMode.None;
     public string strTicketName = "";
-    public string strDomainUserName = "", strUserIdentity = "";
+    public string strDomainUserName = "", strUserSID = "";
     public string strAppFeed;
 
     public WorkspaceInfo objWorkspaceInfo = null;
@@ -45,9 +45,9 @@
         string strReturnUrl = "";
         string strReturnUrlPage = "";
         
-        // gives us https://<hostname>[:port]/rdweb/pages/<lang>/
-        baseUrl = new Uri(new Uri(PageContentsHelper.GetBaseUri(Context), Request.FilePath), ".");
-        
+        // gives us https://<machine>/rdweb/pages/<lang>/
+    //    baseUrl = new Uri(new Uri(Request.Url, Request.FilePath), ".");
+        baseUrl = new Uri(new Uri(GetRealRequestUri(), Request.FilePath), ".");
         try
         {
             string strShowOptimzeExperienceValue = ConfigurationManager.AppSettings["ShowOptimizeExperience"];
@@ -90,25 +90,25 @@
 
         if ( eAuthenticationMode == AuthenticationMode.Forms )
         {
-            if ( HttpContext.Current.User.Identity.IsAuthenticated == false )
+            if ( HttpContext.Current.User.Identity.IsAuthenticated == false | (string)Session["SMSTOKEN"] == "NOT_SMS_AUTH" )
             {
-                string strQueryString;
                 if (String.IsNullOrEmpty(strReturnUrl))
                 {
-                    strQueryString = "?ReturnUrl=" + Request.Path;
+                   
+                    Response.Redirect(new Uri(baseUrl,"login.aspx?ReturnUrl=" + Request.Path).AbsoluteUri);
                 }
                 else
                 {
-                    strQueryString = strReturnUrl;
+                 
+                    Response.Redirect(new Uri(baseUrl, "login.aspx" + strReturnUrl).AbsoluteUri);
                 }
-
-                Response.Redirect(new Uri(baseUrl, "login.aspx" + PageContentsHelper.AppendTenantIdToQuery(strQueryString)).AbsoluteUri);
             }
 
             TSFormAuthTicketInfo objTSFormAuthTicketInfo = new TSFormAuthTicketInfo(HttpContext.Current);
-            strUserIdentity = objTSFormAuthTicketInfo.UserIdentity;
+            strUserSID = objTSFormAuthTicketInfo.UserSid;
             bPrivateMode = objTSFormAuthTicketInfo.PrivateMode;
             strDomainUserName = objTSFormAuthTicketInfo.DomainUserName;
+          
 
             if ( bPrivateMode == true )
             {
@@ -163,9 +163,9 @@
         WebFeed tswf = null;
         try
         {
-            tswf = new WebFeed(RdpType.Both, true);
+            tswf = new WebFeed(RdpType.Both);
             strAppFeed = tswf.GenerateFeed(
-                            strUserIdentity, 
+                            strUserSID, 
                             FeedXmlVersion.Win8,             
                             (Request.PathInfo.Length > 0) ? Request.PathInfo : "/",
                             false); 
@@ -173,11 +173,6 @@
         catch (WorkspaceUnknownFolderException)
         {
             BadFolderRedirect();
-        }
-        catch (InvalidTenantException)
-        {
-            Response.StatusCode = 404;
-            Response.End();
         }
         catch (WorkspaceUnavailableException wue)
         {
@@ -206,6 +201,30 @@
         Response.Cache.SetCacheability(HttpCacheability.NoCache);
     }
 
+public static Uri GetRealRequestUri()
+ {
+     if ((HttpContext.Current == null) || 
+         (HttpContext.Current.Request == null))
+         throw new ApplicationException("Cannot get current request.");
+     return GetRealRequestUri(HttpContext.Current.Request);
+ }
+
+ public static Uri GetRealRequestUri(HttpRequest request)
+ {
+     if (String.IsNullOrEmpty(request.Headers["Host"]))
+       return request.Url;
+     UriBuilder ub = new UriBuilder(request.Url);
+     string[] realHost = request.Headers["Host"].Split(':');
+     string host = realHost[0];
+     ub.Host = host;
+     string portString = realHost.Length > 1 ? realHost[1] : "";
+     int port;
+     if (int.TryParse(portString, out port))
+         ub.Port = port;
+     return ub.Uri;
+ }
+
+
     private void BadFolderRedirect()
     {
         Response.ContentType = "text/html";
@@ -217,10 +236,13 @@
    </head>
    <body>
      <p id=""BadFolder1"">" + L_BadFolderErrorBody_Text + @"</p>     
+     
    </body>
  </html>");
         Response.End();
     }
+
+
 
 </script>
 <%="<?xml-stylesheet type=\"text/xsl\" href=\"" + SecurityElement.Escape(stylesheetUrl.AbsoluteUri) + "\"?>"%>
@@ -242,6 +264,7 @@
                 <p><%=L_RenderFailP1_Text%></p>
                 <p><%=L_RenderFailP2_Text%></p>
                 <p><%=L_RenderFailP3_Text%></p>
+              
             </body>
         </html> 
     </RenderFailureMessage>
@@ -518,6 +541,7 @@
         background-color:white;
       }
     </Style>
+   
     <AppFeed
         showpubliccheckbox="<%=bShowPublicCheckBox.ToString().ToLower()%>"
         privatemode="<%=bPrivateMode.ToString().ToLower()%>"
@@ -531,6 +555,9 @@
         }
         %>
     >
+	
         <%=strAppFeed%>
+        
     </AppFeed>
+    
 </RDWAPage>

@@ -6,13 +6,14 @@
 <% @Import Namespace="System.Security" %>
 <% @Import Namespace="Microsoft.TerminalServices.Publishing.Portal.FormAuthentication" %>
 <% @Import Namespace="Microsoft.TerminalServices.Publishing.Portal" %>
+<% @Import Namespace="RadiusClient" %>
 <script language="C#" runat=server>
 
     //
     // Customizable Text
     //
     string L_CompanyName_Text = "Work Resources";
-
+    
     //
     // Localizable Text
     //
@@ -25,6 +26,8 @@
     const string L_ExistingWorkspaceLabel_Text = "Another user of your computer is currently using this connection.  This user must disconnect before you can log on.";
     const string L_DisconnectedWorkspaceLabel_Text = "Another user of your computer has disconnected from this connection.  Please type your user name and password again.";
     const string L_LogonFailureLabel_Text = "The user name or password that you entered is not valid. Try typing it again.";
+    const string L_LogonSMSFailureLabel_Text = "The token code that you entered is not valid. Try again.";
+    const string L_LogonRadiusFailureLabel_Text = "The radius server did not respond. Check radius configuration or give it another try.";
     const string L_DomainNameMissingLabel_Text = "You must enter a valid domain name.";
     const string L_AuthorizationFailureLabel_Text = "You aren’t authorized to log on to this connection.  Contact your system administrator for authorization.";
     const string L_ServerConfigChangedLabel_Text = "Your RD Web Access session expired due to configuration changes on the remote computer.  Please sign in again.";
@@ -42,27 +45,24 @@
     const string L_RenderFailTitle_Text = "Error: Unable to display RD Web Access";
     const string L_RenderFailP1_Text = "An unexpected error has occurred that is preventing this page from being displayed correctly.";
     const string L_RenderFailP2_Text = "Viewing this page in Internet Explorer with the Enhanced Security Configuration enabled can cause such an error.";
-    const string L_RenderFailP3_Text = "Please try loading this page without the Enhanced Security Configuration enabled. If this error continues to be displayed, please contact your administrator."; 
-    const string L_GenericClaimsAuthErrorLabel_Text = "We can't sign you in right now. Please try again later.";
-    const string L_WrongAxVersionWarningLabel_Text = "You don't have the right version of Remote Desktop Connection to use RD Web Access.";
-    const string L_ClaimsDomainUserNameLabel_Text = "Username@domain:";
+    const string L_RenderFailP3_Text = "Please try loading this page without the Enhanced Security Configuration enabled. If this error continues to be displayed, please contact your administrator.";
 
     //
     // Page Variables
     //
     public string strErrorMessageRowStyle;
-    public bool bFailedLogon = false, bFailedAuthorization = false, bFailedAuthorizationOverride = false, bServerConfigChanged = false, bWorkspaceInUse = false, bWorkspaceDisconnected = false, bPasswordExpired =  false, bPasswordExpiredNoChange = false;
+    public string strDeliveryStyle;
+    public bool bFailedLogon = false, bFailedAuthorization = false, bServerConfigChanged = false, bWorkspaceInUse = false, bWorkspaceDisconnected = false, bPasswordExpired = false, bPasswordExpiredNoChange = false, bFailedSMSLogon = false, bFailedRadiusLogon = false, bOTP = false;
     public string strWorkSpaceID = "";
     public string strRDPCertificates = "";
     public string strRedirectorName = "";
-    public string strClaimsHint = "";
     public string strReturnUrl = "";
     public string strReturnUrlPage = "";
     public string strPasswordExpiredQueryString = "";
-    public string strEventLogUploadAddress = "";
     public string sHelpSourceServer, sLocalHelp;
     public Uri baseUrl;
-
+    public bool bEnableSMS = false;
+    public bool bEnableMail = false;
     public string strPrivateModeTimeout = "240";
     public string strPublicModeTimeout = "20";
 
@@ -78,8 +78,9 @@
             Response.End();
         }
 
-        // gives us https://<hostname>[:port]/rdweb/pages/<lang>/
-        baseUrl = new Uri(new Uri(PageContentsHelper.GetBaseUri(Context), Request.FilePath), ".");
+        // gives us https://<machine>/rdweb/pages/<lang>/
+    //    baseUrl = new Uri(new Uri(Request.Url, Request.FilePath), ".");
+	 baseUrl = new Uri(new Uri(GetRealRequestUri(), Request.FilePath), ".");
 
         sLocalHelp = ConfigurationManager.AppSettings["LocalHelp"];
         if ((sLocalHelp != null) && (sLocalHelp == "true"))
@@ -99,17 +100,88 @@
         catch (Exception objException)
         {
         }
+
+         try
+        {
+            
+            if (ConfigurationManager.AppSettings["OTP"].ToString().Equals("true", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        bOTP = true;
+                    }
+                    else
+                    {
+                         bOTP = false;
+                    }
+       
+        }
+        catch (Exception objException)
+        {
+          bOTP = false;
+        }
+
+        try
+        {
+            
+            if (ConfigurationManager.AppSettings["EnableSMS"].ToString().Equals("true", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        bEnableSMS = true;
+                    }
+                    else
+                    {
+                        bEnableSMS = false;
+                    }
+       
+        }
+        catch (Exception objException)
+        {
+          bEnableSMS = false;
+        }
+
+         try
+        {
+            
+            if (ConfigurationManager.AppSettings["EnableMail"].ToString().Equals("true", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        bEnableMail = true;
+                    }
+                    else
+                    {
+                        bEnableMail = false;
+                    }
+       
+        }
+        catch (Exception objException)
+        {
+          bEnableMail = false;
+        }
+
     }
 
     void Page_Load(object sender, EventArgs e)
     {
+
+        if (!Page.IsPostBack)
+        {
+            Session["UserPass"] = "";
+            Session["DomainUserName"] = "";
+        }
+        
         if ( Request.QueryString != null )
         {
             NameValueCollection objQueryString = Request.QueryString;
             if ( objQueryString["ReturnUrl"] != null )
             {
-                strReturnUrlPage = objQueryString["ReturnUrl"];
-                strReturnUrl = "?ReturnUrl=" + HttpUtility.UrlEncode(strReturnUrlPage);
+                string strSmsToken = ConfigurationManager.AppSettings["SmsToken"];
+                if (strSmsToken == null || !(strSmsToken.Equals("true", StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    strReturnUrlPage = objQueryString["ReturnUrl"];
+                    strReturnUrl = "?ReturnUrl=" + HttpUtility.UrlEncode(strReturnUrlPage);
+                }
+                else
+                {
+                    strReturnUrlPage = objQueryString["ReturnUrl"].ToLower();
+                    strReturnUrl = "?ReturnUrl=" + HttpUtility.UrlEncode(strReturnUrlPage.Replace("default.aspx", "smstoken.aspx")); 
+                }
             }
             if ( objQueryString["Error"] != null )
             {
@@ -125,10 +197,13 @@
                 {
                     bFailedAuthorization = true;
                 }
-                else if ( objQueryString["Error"].Equals("UnauthorizedAccessOverride", StringComparison.CurrentCultureIgnoreCase) )
+                else if (objQueryString["Error"].Equals("LoginSMSFailed", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    bFailedAuthorization = true;
-                    bFailedAuthorizationOverride = true;
+                    bFailedSMSLogon = true;
+                }
+                else if (objQueryString["Error"].Equals("LoginRadiusFailed", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    bFailedRadiusLogon = true;
                 }
                 else if ( objQueryString["Error"].Equals("ServerConfigChanged", StringComparison.CurrentCultureIgnoreCase) )
                 {
@@ -182,7 +257,7 @@
         if ( HttpContext.Current.User.Identity.IsAuthenticated != true )
         {
             // Only do this if we are actually rendering the login page, if we are just redirecting there is no need for these potentially expensive calls
-            objWorkspaceInfo = PageContentsHelper.GetWorkspaceInfo();
+            objWorkspaceInfo = RdwaConfig.GetWorkspaceInfo();
             if ( objWorkspaceInfo != null )
             {
                 strWorkSpaceID = objWorkspaceInfo.WorkspaceId;
@@ -192,18 +267,31 @@
                 {
                     L_CompanyName_Text = strWorkspaceName;
                 }
-                if (!String.IsNullOrEmpty(objWorkspaceInfo.EventLogUploadAddress))
-                {
-                    strEventLogUploadAddress = objWorkspaceInfo.EventLogUploadAddress;
-                }
             }
-            strRDPCertificates = PageContentsHelper.GetRdpSigningCertificateHash();
-            strClaimsHint = PageContentsHelper.GetClaimsHint();
+            strRDPCertificates = RdwaConfig.GetRdpSigningCertificateHash();
         }
 
         if ( HttpContext.Current.User.Identity.IsAuthenticated == true )
         {
-            SafeRedirect(strReturnUrlPage);
+          //  if ((string)Session["SMSTOKEN"] == "NOT_SMS_AUTH")
+           // {
+          //      bFailedLogon = false;
+         //       Session["SMSTOKEN"] = "";
+         //   }
+         //   else
+         //   {
+            string strSmsToken = ConfigurationManager.AppSettings["SmsToken"];
+            if (strSmsToken == null || !(strSmsToken.Equals("true", StringComparison.CurrentCultureIgnoreCase)))
+            {
+                SafeRedirect(strReturnUrlPage);
+            }
+            else
+            {
+                Session["SMSTOKEN"] = "NOT_SMS_AUTH";
+                SafeRedirect(strReturnUrlPage);
+            }
+        //    }
+           
         }
         else if ( HttpContext.Current.Request.HttpMethod.Equals("POST", StringComparison.CurrentCultureIgnoreCase) == true )
         {
@@ -218,14 +306,33 @@
         {
             bFailedLogon = false;
         }
-
-        if (bFailedAuthorizationOverride)
-        {
-            bFailedLogon = false;
-        }
         
         Response.Cache.SetCacheability(HttpCacheability.NoCache);
     }
+
+public static Uri GetRealRequestUri()
+ {
+     if ((HttpContext.Current == null) || 
+         (HttpContext.Current.Request == null))
+         throw new ApplicationException("Cannot get current request.");
+     return GetRealRequestUri(HttpContext.Current.Request);
+ }
+
+ public static Uri GetRealRequestUri(HttpRequest request)
+ {
+     if (String.IsNullOrEmpty(request.Headers["Host"]))
+       return request.Url;
+     UriBuilder ub = new UriBuilder(request.Url);
+     string[] realHost = request.Headers["Host"].Split(':');
+     string host = realHost[0];
+     ub.Host = host;
+     string portString = realHost.Length > 1 ? realHost[1] : "";
+     int port;
+     if (int.TryParse(portString, out port))
+         ub.Port = port;
+     return ub.Uri;
+ }
+
     
     private void SafeRedirect(string strRedirectUrl)
     {
@@ -233,12 +340,11 @@
 
         if (!String.IsNullOrEmpty(strRedirectUrl))
         {
-            Uri baseUrl = PageContentsHelper.GetBaseUri(Context);
-            Uri redirectUri = new Uri(new Uri(baseUrl, Request.FilePath), strRedirectUrl + PageContentsHelper.AppendTenantIdToQuery(String.Empty));
+            Uri redirectUri = new Uri(GetRealRequestUri(), strRedirectUrl);
 
             if (
-                redirectUri.Authority.Equals(baseUrl.Authority) &&
-                redirectUri.Scheme.Equals(baseUrl.Scheme)
+                redirectUri.Authority.Equals(Request.Url.Authority) &&
+                redirectUri.Scheme.Equals(Request.Url.Scheme)
                )
             {
                 strRedirectSafeUrl = redirectUri.AbsoluteUri;   
@@ -248,11 +354,26 @@
 
         if (strRedirectSafeUrl == null)
         {
-            strRedirectSafeUrl = "default.aspx" + PageContentsHelper.AppendTenantIdToQuery(String.Empty);
-        }
-
+             string strSmsToken = ConfigurationManager.AppSettings["SmsToken"];
+             if (strSmsToken == null || !(strSmsToken.Equals("true", StringComparison.CurrentCultureIgnoreCase)))
+             {
+                 strRedirectSafeUrl = "default.aspx";
+             } else
+             {
+        
+                string UserPass = Request.Form["UserPass"];
+                string DomainUserName =Request.Form["DomainUserName"];
+                string Delivery =  Request.Form["rDelivery"];
+                Session["UserPass"] = UserPass;
+                Session["DomainUserName"]= DomainUserName;
+                Session["Delivery"] =  Delivery;
+                strRedirectSafeUrl = "smstoken.aspx";
+           
+            }
+         }
         Response.Redirect(strRedirectSafeUrl);       
     }
+
 </script>
 <RDWAPage 
     helpurl="<%=sHelpSourceServer%>" 
@@ -278,35 +399,21 @@
     onunload="onPageUnload(event)"/>
   <HTMLMainContent>
   
-      <form id="FrmLogin" name="FrmLogin" action="login.aspx<%=SecurityElement.Escape(PageContentsHelper.AppendTenantIdToQuery(strReturnUrl))%>" method="post" onsubmit="return onLoginFormSubmit()">
+      <form id="FrmLogin" name="FrmLogin" action="login.aspx<%=SecurityElement.Escape(strReturnUrl)%>" method="post" onsubmit="return onLoginFormSubmit()">
 
         <input type="hidden" name="WorkSpaceID" value="<%=SecurityElement.Escape(strWorkSpaceID)%>"/>
         <input type="hidden" name="RDPCertificates" value="<%=SecurityElement.Escape(strRDPCertificates)%>"/>
         <input type="hidden" name="PublicModeTimeout" value="<%=SecurityElement.Escape(strPublicModeTimeout)%>"/>
         <input type="hidden" name="PrivateModeTimeout" value="<%=SecurityElement.Escape(strPrivateModeTimeout)%>"/>
         <input type="hidden" name="WorkspaceFriendlyName" value="<%=SecurityElement.Escape(L_CompanyName_Text)%>"/>
-        <input type="hidden" name="EventLogUploadAddress" value="<%=SecurityElement.Escape(strEventLogUploadAddress)%>"/>
         <input type="hidden" name="RedirectorName" value="<%=SecurityElement.Escape(strRedirectorName)%>"/>
-        <input type="hidden" name="ClaimsHint" value="<%=SecurityElement.Escape(strClaimsHint)%>"/>
-        <input type="hidden" name="ClaimsToken" value=""/>
-
+       
         <input name="isUtf8" type="hidden" value="1"/>
         <input type="hidden" name="flags" value="0"/>
 
 
-        <table id="tableLoginDisabled" width="300" border="0" align="center" cellpadding="0" cellspacing="0" style="display:none">
-            <tr>
-                <td height="20">&#160;</td>
-            </tr>
-            <tr>
-                <td><span class="wrng"><%=L_WrongAxVersionWarningLabel_Text%></span></td>
-            </tr>
-            <tr>
-                <td height="50">&#160;</td>
-            </tr>
-        </table>
 
-        <table id="tableLoginForm" width="300" border="0" align="center" cellpadding="0" cellspacing="0" style="display:none">
+        <table width="300" border="0" align="center" cellpadding="0" cellspacing="0">
 
             <tr>
             <td height="20">&#160;</td>
@@ -316,8 +423,7 @@
             <td>
                 <table width="300" border="0" cellpadding="0" cellspacing="0">
                 <tr>
-                    <td id="tdDomainUserNameLabel" width="130" align="right" style="display:none"><%=L_DomainUserNameLabel_Text%></td>
-                    <td id="tdClaimsDomainUserNameLable" width="130" align="right" style="display:none"><%=L_ClaimsDomainUserNameLabel_Text%></td>
+                    <td width="130" align="right"><%=L_DomainUserNameLabel_Text%></td>
                     <td width="7"></td>
                     <td align="right">
                     <label><input id="DomainUserName" name="DomainUserName" type="text" class="textInputField" runat="server" size="25" autocomplete="off" /></label>
@@ -343,6 +449,42 @@
                 </table>
             </td>
             </tr>
+
+    <%
+    strDeliveryStyle = "style=\"display:none\"";
+    if ( bOTP )
+    {
+   strDeliveryStyle = "style=\"display:\"";
+    }
+    %>
+            <td height="7"></td>
+            
+            <tr id="trDelivery" <%=strDeliveryStyle%> >
+            <td>
+                <table width="300" border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td width="105" align="right">Token delivery:</td>
+                    <td width="7"></td>
+                    <td align="left" width="170">
+
+              <%      if (bEnableSMS == true) {  %>
+                    <label> <input name="rDelivery" type="radio" size="25" value="SMS" 
+                            checked="checked"/>SMS</label>
+                            <%} %>
+
+                    <%      if (bEnableMail == true) {  %>
+                         <%      if (bEnableSMS == true) {  %>
+                    <label> <input name="rDelivery" type="radio" size="25" value="EMAIL"/>E-Mail </label>
+                       <%} else { %>
+                        <label> <input name="rDelivery" type="radio" size="25" value="EMAIL" checked="checked"/>E-Mail </label>
+                       <%} %>
+                    <%} %>
+                    </td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+               
 
     <%
     strErrorMessageRowStyle = "style=\"display:none\"";
@@ -426,6 +568,46 @@
 
     <%
     strErrorMessageRowStyle = "style=\"display:none\"";
+    if ( bFailedSMSLogon == true )
+    {
+    strErrorMessageRowStyle = "style=\"display:\"";
+    }
+    %>
+            <tr id="tr1" <%=strErrorMessageRowStyle%> >
+            <td>
+                <table>
+                <tr>
+                    <td height="20">&#160;</td>
+                </tr>
+                <tr>
+                    <td><span class="wrng"><%=L_LogonSMSFailureLabel_Text%></span></td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+
+    <%
+    strErrorMessageRowStyle = "style=\"display:none\"";
+    if ( bFailedRadiusLogon == true )
+    {
+    strErrorMessageRowStyle = "style=\"display:\"";
+    }
+    %>
+            <tr id="tr2" <%=strErrorMessageRowStyle%> >
+            <td>
+                <table>
+                <tr>
+                    <td height="20">&#160;</td>
+                </tr>
+                <tr>
+                    <td><span class="wrng"><%=L_LogonRadiusFailureLabel_Text%></span></td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+
+    <%
+    strErrorMessageRowStyle = "style=\"display:none\"";
     if ( bFailedLogon == true )
     {
     strErrorMessageRowStyle = "style=\"display:\"";
@@ -457,9 +639,11 @@
             </td>
             </tr> 
 
+
+  
     <%
     strErrorMessageRowStyle = "style=\"display:none\"";
-    if ( bFailedAuthorization || bFailedAuthorizationOverride )
+    if ( bFailedAuthorization )
     {
     strErrorMessageRowStyle = "style=\"display:\"";
     }
@@ -497,19 +681,6 @@
             </td>
             </tr>
 
-            <tr id="trErrorGenericClaimsAuthFailure" style="display:none" >
-            <td>
-                <table>
-                <tr>
-                    <td height="20">&#160;</td>
-                </tr>
-                <tr>
-                    <td><span class="wrng"><%=L_GenericClaimsAuthErrorLabel_Text%></span></td>
-                </tr>
-                </table>
-            </td>
-            </tr> 
-
             <tr>
             <td height="20">&#160;</td>
             </tr>
@@ -543,8 +714,8 @@
                     <td><%=L_PublicLabel_Text%></td>
                 </tr>
                 <tr id="trPubExp" style="display:none" >
-                    <td width="30"></td>
-                    <td><span class="expl"><%=L_PublicExplanationLabel_Text%></span></td>
+      			        <td width="30"></td>
+      			        <td><span class="expl"><%=L_PublicExplanationLabel_Text%></span></td>
                 </tr>
                 <tr>
                     <td height="7"></td>
@@ -563,8 +734,8 @@
                     <td><%=L_PrivateLabel_Text%></td>
                 </tr>
                 <tr id="trPrvtExp" style="display:none" >
-                    <td width="30"></td>
-                    <td><span class="expl"><%=L_PrivateExplanationLabel_Text%></span></td>
+                  	    <td width="30"></td>
+        			    <td><span class="expl"><%=L_PrivateExplanationLabel_Text%></span></td>
                 </tr>
                 <tr>
                     <td height="7"></td>

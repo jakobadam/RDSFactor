@@ -1,2 +1,2 @@
-﻿<%@ Page Language="C#" CodeFile="WebFeed.aspx.cs" Inherits="TSWF_PagesVdir.TsWebFeed" Trace="false" %>
+﻿<%@ Page Language="C#" CodeFile="WebFeed.aspx.cs" Inherits="TSWF.TsWebFeed" Trace="false" %>
 <%=oXML%>

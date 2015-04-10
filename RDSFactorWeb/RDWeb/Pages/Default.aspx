@@ -10,8 +10,10 @@
 
     void goToFolder(string getLangVal)
     {
-        Response.Redirect(getLangVal + "/Default.aspx" + Request.Url.Query,true);
+	
+       Response.Redirect(getLangVal + "/Default.aspx" + Request.Url.Query,true);
     }
+
 
     void Page_Load(Object sender, EventArgs e)
     {

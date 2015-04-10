@@ -15,7 +15,7 @@
 
         if ( HttpContext.Current.User.Identity.IsAuthenticated == true )
         {
-            Response.Redirect( "default.aspx" + AppendTenantIdToQuery(String.Empty) );
+            Response.Redirect( "default.aspx" );
         }
         else
         {
@@ -33,33 +33,18 @@
                     {
                         strQueryString = "?Error=WkSDisconnected";
                     }
+		            else if ( objQueryString["Error"].Equals("LoginSMSFailed", StringComparison.CurrentCultureIgnoreCase) )
+                    {
+                        strQueryString = "?Error=LoginSMSFailed";
+                    }
+                    else if ( objQueryString["Error"].Equals("LoginRadiusFailed", StringComparison.CurrentCultureIgnoreCase) )
+                    {
+                        strQueryString = "?Error=LoginRadiusFailed";
+                    }
                 }
             }
-            Response.Redirect( "login.aspx" + AppendTenantIdToQuery(strQueryString) );
+            Response.Redirect( "login.aspx" + strQueryString );
         }
-    }
-
-    // BUGBUG: Temporary workaround while we need to expose the tenant ID as a query string to end-users
-    private const string tenantIdLabel = "tenantId";
-    public static string AppendTenantIdToQuery(string strQueryString)
-    {
-        if(HttpContext.Current.Request.QueryString != null)
-        {
-            if(!String.IsNullOrEmpty(HttpContext.Current.Request.QueryString[tenantIdLabel]))
-            {
-                string strTenantIdParams = tenantIdLabel + "=" + HttpUtility.UrlEncode(HttpContext.Current.Request.QueryString[tenantIdLabel]);
-                if(String.IsNullOrEmpty(strQueryString))
-                {
-                    return "?" + strTenantIdParams; 
-                }
-                else
-                {
-                    return strQueryString + "&" + strTenantIdParams;
-                }
-            }
-        }
-        
-        return strQueryString;
     }
 
 </script>

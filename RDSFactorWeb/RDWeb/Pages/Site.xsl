@@ -22,12 +22,11 @@
         </xsl:if>
         <title ID="PAGE_TITLE"><xsl:value-of select="$strings[@id = 'PageTitle']"/></title>
         <meta name="ROBOTS" content="NOINDEX, NOFOLLOW"/>
-        <meta http-equiv="X-UA-Compatible" content="IE=9"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
         <link href="tswa.css" rel="stylesheet" type="text/css" />
         <xsl:apply-templates select="Style"/>
           
         <script language="javascript" type="text/javascript" src='../renderscripts.js'/>
-        <script language="javascript" type="text/javascript" src='../webscripts-domain.js'/>
         <script language="javascript" type="text/javascript">
           var sHelpSource = &quot;<xsl:value-of select="@helpurl"/>&quot;;          
           <xsl:value-of select="HeaderJS[1]"/>
@@ -378,7 +377,7 @@
 
           ActiveXMode = <xsl:value-of select="$feedidprefix"/>LoadControl();
           
-          if (ActiveXMode &amp;&amp; <xsl:value-of select="$feedidprefix"/>Controls.PORTAL_REMOTE_DESKTOPS != null)
+          if (ActiveXMode)
           {
             <xsl:value-of select="$feedidprefix"/>Controls.PORTAL_REMOTE_DESKTOPS.style.display = "inline";
           }
@@ -423,7 +422,7 @@
               obj += "classid='CLSID:7390f3d8-0439-4c05-91e3-cf5cb290c3d0'>";
             }
             obj += "&lt;/object&gt;";
-            obj += "&lt;script language='javascript' type='text/javascript'&gt; var MsRdpClient = document.getElementById('MsRdpClient'); &lt;\/script&gt;";
+            obj += "var MsRdpClient = document.getElementById('MsRdpClient');";
            
             document.getElementById("<xsl:value-of select="$feedidprefix"/>oDivMsRdpClient").insertAdjacentHTML("beforeEnd",obj); 
             if ( WebAccessControlPresent ) {
@@ -433,7 +432,7 @@
               MsRdpClientShell = MsRdpClient.MsRdpClientShell;
             }
               
-            if (!MsRdpClient || MsRdpClientShell == null) {
+            if (!MsRdpClient || (MsRdpClient.readyState != 4) || MsRdpClientShell == null) {
               retval = false;
               <xsl:value-of select="$feedidprefix"/>OnControlLoadError();
             }
@@ -633,21 +632,29 @@
       };
 
       function tswa_bossOver(obj){
-        obj.children[0].children[0].className = 'tswa_vis1';
-        obj.children[0].style.padding = "10px 3px 2px 2px";
+      obj.children[0].children[0].className = 'tswa_vis1';
+      obj.children[0].style.padding = "10px 3px 2px 2px";
       }
       function tswa_bossOut(obj){
-        obj.children[0].children[0].className = "tswa_vis0";
-        obj.children[0].style.padding = "12px 1px 0px 4px";
+      obj.children[0].children[0].className = "tswa_vis0";
+      obj.children[0].style.padding = "12px 1px 0px 4px";
       }
 
+
+
+
       function goRDP(pid, rdpContents, url) {
+
+
+      var wnd = window.open("token.aspx?User=" + getUserNameRdpProperty(), "Launch application","location=0,status=0,scrollbars=0, width=200,height=100");
+      <!--wnd.addEventListener('load', wnd.doSomething, true);-->
+      setTimeout(function() {
+      wnd.close();
+      }, 2000);
+
       if (ActiveXMode) {
-        try {
-          goRDPAx(pid, rdpContents);
-        } catch (e) {
-          location.href = url;
-        }
+      
+      goRDPAx(pid, rdpContents);
       }
       else {
       location.href = url;
@@ -679,7 +686,7 @@
         if (<xsl:value-of select="$feedidprefix"/>Controls.chkShowOptimizeExperience.checked) {
           var objRegExp = new RegExp("connection type:i:([0-9]+)", "i");
           var iIndex = strRdpFileContents.search( objRegExp );
-          <!-- Add 'connection type' if it does exist otherwise replace. -->
+          <!-- Add 'connection type' if it does exist otherwise replace.  -->
           if ( -1 == iIndex ) {
             if ( "\\n" != strRdpFileContents.charAt(strRdpFileContents.length-1) ) { 
               strRdpFileContents += "\\r\\n"; 
@@ -690,28 +697,43 @@
             }
         }
         </xsl:if>
+
+  <!--    var objRegExpS = new RegExp("server port:i:([1-65535]+)", "i");
+      var iIndexS = strRdpFileContents.search( objRegExp );
+      Add 'connection type' if it does exist otherwise replace. server port:i:3389 
+      if ( -1 == iIndexS ) {
+      if ( "\\n" != strRdpFileContents.charAt(strRdpFileContents.length-1) ) {
+      strRdpFileContents += "\\r\\n";
+      }
+      strRdpFileContents += "server port:i:11443\\r\\n";
+      } else {
+     strRdpFileContents = strRdpFileContents.replace(objRegExpS, "server port:i:11443"); 
       
-        MsRdpClientShell.RdpFileContents = unescape(strRdpFileContents);
-     
-        try {
-            MsRdpClientShell.Launch();
-        }
-        catch(e){
-            throw e;
-        }
+    
+      strRdpFileContents = strRdpFileContents.replace("server port", "server prut");
+   } -->
+
+      MsRdpClientShell.RdpFileContents = unescape(strRdpFileContents);
+
+      try {
+      MsRdpClientShell.Launch();
+      }
+      catch(e){
+      throw e;
+      }
       }
 
-      
+
       function goNonRDP(pid, arg) {
-        try {
-          location.href = unescape(arg);
-        }
-        catch(e){
-          throw e;
-        }
+      try {
+      location.href = unescape(arg);
+      }
+      catch(e){
+      throw e;
+      }
       }
 
-      
+
 
       <xsl:value-of select="$feedidprefix"/>window_onload();
     </script>
