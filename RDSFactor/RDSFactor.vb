@@ -1,8 +1,8 @@
 ﻿Imports System.DirectoryServices
 Imports System.IO
 Imports System.Reflection
-Imports CICRadarR.SMS
-Imports CICRadarR.LogFile
+Imports RDSFactor.SMSModem
+Imports RDSFactor.LogFile
 Imports System.Security.Cryptography
 Imports System.Text
 Imports System
@@ -275,9 +275,9 @@ Public Class RDSFactor
 
         ' test if using online sms provider or local modem
         If ModemType = 1 Then ' local modem
-            Dim modem As New SmsClass(ComPort)
+            Dim modem As New SMSModem(ComPort)
             modem.Opens()
-            modem.sendSms(number, passcode, SmsC)
+            modem.send(number, passcode, SmsC)
             modem.Closes()
             modem = Nothing
             Return "Ok"
