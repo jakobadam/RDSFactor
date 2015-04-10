@@ -75,7 +75,7 @@ Public Class RDSHandler
     ' NOTE: Requests contain the session GUID in the password attribute
     ' of the packet.
     Public Sub ProcessAppLaunchRequest()
-        CICRadarR.AccessLog("ProcessAppLaunchRequest")
+        RDSFactor.AccessLog("ProcessAppLaunchRequest")
 
         ' When the packet is an AppLaunchRequest the password attribute contains the session id!
         Dim packetSessionId = mPassword
@@ -83,15 +83,15 @@ Public Class RDSHandler
         Dim sessionTimestamp = sessionTimestamps(mUsername)
 
         If storedSessionId = Nothing Or sessionTimestamp = Nothing Then
-            CICRadarR.AccessLog("User has no session. MUST re-authenticate!")
+            RDSFactor.AccessLog("User has no session. MUST re-authenticate!")
             mPacket.RejectAccessRequest()
             Exit Sub
         End If
 
         If packetSessionId = storedSessionId Then
             Dim minsSinceLastActivity = DateDiff(DateInterval.Minute, sessionTimestamp, Now)
-            If minsSinceLastActivity < CICRadarR.SessionTimeOut Then
-                CICRadarR.AccessLog("Opening window for: " & mUsername)
+            If minsSinceLastActivity < RDSFactor.SessionTimeOut Then
+                RDSFactor.AccessLog("Opening window for: " & mUsername)
                 ' Pro-long session
                 sessionTimestamps(storedSessionId) = Now
                 ' Open launch window
@@ -99,12 +99,12 @@ Public Class RDSHandler
                 mPacket.AcceptAccessRequest()
                 Exit Sub
             Else
-                CICRadarR.AccessLog("Session timed out -- User MUST re-authenticate")
+                RDSFactor.AccessLog("Session timed out -- User MUST re-authenticate")
                 userSessions.Remove(mUsername)
                 sessionTimestamps.Remove(mUsername)
             End If
         Else
-            CICRadarR.AccessLog("Stored session id didn't match packet session id!")
+            RDSFactor.AccessLog("Stored session id didn't match packet session id!")
         End If
 
         mPacket.RejectAccessRequest()
@@ -122,14 +122,14 @@ Public Class RDSHandler
     ' TODO: Fix race-condition RD Web vs. Gateway. Don't start RDP client in RD Web 
     ' before ensuring App Launch request was successful 
     Public Sub ProcessGatewayRequest()
-        CICRadarR.AccessLog("Gateway Request for user: " & mUsername)
+        RDSFactor.AccessLog("Gateway Request for user: " & mUsername)
 
         Dim sessionId = userSessions(mUsername)
         Dim launchTimestamp = userLaunchTimestamps(mUsername)
         Dim attributes As New RADIUSAttributes
 
         If sessionId = Nothing Or launchTimestamp = Nothing Then
-            CICRadarR.AccessLog("User's has no launch window. User must re-authenticate")
+            RDSFactor.AccessLog("User's has no launch window. User must re-authenticate")
             mPacket.RejectAccessRequest()
             Exit Sub
         End If
@@ -141,11 +141,11 @@ Public Class RDSHandler
         End If
 
         Dim secondsSinceLaunch = DateDiff(DateInterval.Second, launchTimestamp, Now)
-        If secondsSinceLaunch < CICRadarR.LaunchTimeOut Then
-            CICRadarR.AccessLog("Allowing access through gateway for user: " & mUsername & " -- closing window")
+        If secondsSinceLaunch < RDSFactor.LaunchTimeOut Then
+            RDSFactor.AccessLog("Allowing access through gateway for user: " & mUsername & " -- closing window")
             mPacket.AcceptAccessRequest(attributes)
         Else
-            CICRadarR.AccessLog("Launch window has closed!")
+            RDSFactor.AccessLog("Launch window has closed!")
         End If
 
         ' close window
@@ -160,24 +160,24 @@ Public Class RDSHandler
             Exit Sub
         End If
 
-        CICRadarR.AccessLog("ProcessAccessRequest")
+        RDSFactor.AccessLog("ProcessAccessRequest")
         Try
             Dim ldapResult = Authenticate()
 
-            If CICRadarR.EnableOTP Then
+            If RDSFactor.EnableOTP Then
                 TwoFactorChallenge()
                 Exit Sub
             Else
                 Accept()
             End If
         Catch ex As Exception
-            CICRadarR.AccessLog("Authentication failed. Sending reject. Error: " & ex.Message)
+            RDSFactor.AccessLog("Authentication failed. Sending reject. Error: " & ex.Message)
             mPacket.RejectAccessRequest()
         End Try
     End Sub
 
     Private Sub Accept()
-        CICRadarR.AccessLog("Accept")
+        RDSFactor.AccessLog("Accept")
         Dim sGUID As String = System.Guid.NewGuid.ToString()
         userSessions(mUsername) = sGUID
         sessionTimestamps(mUsername) = Now
@@ -190,13 +190,13 @@ Public Class RDSHandler
     End Sub
 
     Private Sub ProcessChallengeResponse()
-        CICRadarR.AccessLog("ProcessChallengeResponse")
+        RDSFactor.AccessLog("ProcessChallengeResponse")
 
         ' When the packet is an Challange-Response the password attr. contains the token
         Dim challangeCode = mPassword
         Dim state = mPacket.Attributes.GetFirstAttribute(RadiusAttributeType.State)
 
-        Dim sid = EncDec.Encrypt(mUsername & "_" & challangeCode, CICRadarR.encCode)
+        Dim sid = EncDec.Encrypt(mUsername & "_" & challangeCode, RDSFactor.encCode)
         If sid = state.ToString Then
             Accept()
         Else
@@ -205,19 +205,19 @@ Public Class RDSHandler
     End Sub
 
     Private Sub TwoFactorChallenge()
-        Dim code = CICRadarR.GenerateCode
-        Dim sid = EncDec.Encrypt(mUsername & "_" & code, CICRadarR.encCode) 'generate unique code
-        CICRadarR.AccessLog("Access Challange Code: " & code)
+        Dim code = RDSFactor.GenerateCode
+        Dim sid = EncDec.Encrypt(mUsername & "_" & code, RDSFactor.encCode) 'generate unique code
+        RDSFactor.AccessLog("Access Challange Code: " & code)
 
         userSidTokens(mUsername) = sid
         tokenTimestamps(mUsername) = Now
 
         If mUseSMSFactor Then
-            CICRadarR.AccessLog("TODO: Send SMS")
+            RDSFactor.AccessLog("TODO: Send SMS")
         End If
 
         If mUseEmailFactor Then
-            CICRadarR.AccessLog("TODO: Send Email")
+            RDSFactor.AccessLog("TODO: Send Email")
         End If
 
         Dim attributes As New RADIUSAttributes
@@ -233,9 +233,9 @@ Public Class RDSHandler
 
     Private Function Authenticate() As System.DirectoryServices.SearchResult
         Dim password As String = mPacket.UserPassword
-        Dim ldapDomain As String = CICRadarR.LDAPDomain
+        Dim ldapDomain As String = RDSFactor.LDAPDomain
 
-        CICRadarR.AccessLog("Authenticating: LDAPPAth: " & "LDAP://" & ldapDomain & ", Username: " & mUsername)
+        RDSFactor.AccessLog("Authenticating: LDAPPAth: " & "LDAP://" & ldapDomain & ", Username: " & mUsername)
         Dim dirEntry As New DirectoryEntry("LDAP://" & ldapDomain, mUsername, password)
 
         Dim obj As Object = dirEntry.NativeObject
@@ -248,15 +248,15 @@ Public Class RDSHandler
         End If
 
         search.PropertiesToLoad.Add("distinguishedName")
-        If CICRadarR.EnableOTP = True Then
-            search.PropertiesToLoad.Add(CICRadarR.ADField)
-            search.PropertiesToLoad.Add(CICRadarR.ADMailField)
+        If RDSFactor.EnableOTP = True Then
+            search.PropertiesToLoad.Add(RDSFactor.ADField)
+            search.PropertiesToLoad.Add(RDSFactor.ADMailField)
         End If
 
         Dim result = search.FindOne()
 
         If IsDBNull(result) Then
-            CICRadarR.AccessLog("Failed to authenticate with Active Directory")
+            RDSFactor.AccessLog("Failed to authenticate with Active Directory")
             Throw New MissingUser
         End If
 
@@ -264,19 +264,19 @@ Public Class RDSHandler
     End Function
 
     Private Function LdapGetNumber(result As SearchResult) As String
-        Dim mobile = result.Properties(CICRadarR.ADField)(0)
+        Dim mobile = result.Properties(RDSFactor.ADField)(0)
         mobile = Replace(mobile, "+", "")
         If mobile.Trim.Length = 0 Then
-            CICRadarR.AccessLog("Unable to find correct phone number for user " & mUsername)
+            RDSFactor.AccessLog("Unable to find correct phone number for user " & mUsername)
         End If
         Return mobile
     End Function
 
     Private Function LdapGetEmail(result As SearchResult) As String
-        Dim email = result.Properties(CICRadarR.ADMailField)(0)
+        Dim email = result.Properties(RDSFactor.ADMailField)(0)
 
         If InStr(email, "@") = 0 Then
-            CICRadarR.AccessLog("Unable to find correct email for user " & mUsername)
+            RDSFactor.AccessLog("Unable to find correct email for user " & mUsername)
         End If
         Return email
     End Function

@@ -2,7 +2,7 @@
 
 Public Class TestService
 
-    Private Radius_Service As New CICRadarR
+    Private Radius_Service As New RDSFactor
     Private Sub btnStart_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnStart.Click
         btnStart.Enabled = False
         Call Radius_Service.OnstartTest()

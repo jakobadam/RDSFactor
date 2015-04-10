@@ -17,7 +17,7 @@ Public Class CitrixHandler
         ' and drop other requests silently ...
 
         If packet.Code <> RadiusPacketCode.AccessRequest Then
-            CICRadarR.AccessLog("Not a valid radius packet.. Drop!")
+            RDSFactor.AccessLog("Not a valid radius packet.. Drop!")
             Exit Sub
         End If
 
@@ -36,11 +36,11 @@ Public Class CitrixHandler
         ' will return Nothing.
         If username Is Nothing Then
             ' Technically, this case is against RFC, so ... drop.
-            CICRadarR.AccessLog("Not a valid radius packet.. No username pressent.. Drop!")
+            RDSFactor.AccessLog("Not a valid radius packet.. No username pressent.. Drop!")
             Exit Sub
         End If
 
-        CICRadarR.AccessLog("Processing packet for user: " & username.ToString)
+        RDSFactor.AccessLog("Processing packet for user: " & username.ToString)
 
         'If packetHash.ContainsKey(username.GetString & "_" & pass.GetString) Then
         '    Exit Sub
@@ -49,27 +49,27 @@ Public Class CitrixHandler
 
 
         Dim existState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.State)
-        CICRadarR.AccessLog("Packet contains a state attribute? State=" & existState.ToString)
+        RDSFactor.AccessLog("Packet contains a state attribute? State=" & existState.ToString)
         If existState = True Then  ' Ok we have at packet with the State attribute set. Check if we can identify the authtentication packet.
             Dim state As String = packet.Attributes.GetFirstAttribute(RadiusAttributeType.State).ToString
-            CICRadarR.AccessLog("Packet contains a state attribute State=" & state)
+            RDSFactor.AccessLog("Packet contains a state attribute State=" & state)
             Dim UserDomain As String = ""
             'lets see if user login using upd or UPN name
             Dim sUserName As String = username.ToString
             Dim sPassword As String = packet.UserPassword
 
-            CICRadarR.AccessLog("SMSToken supplied by user: " & sUserName)
+            RDSFactor.AccessLog("SMSToken supplied by user: " & sUserName)
 
             sid = ""
             If InStr(sUserName, "@") > 0 Then 'UPN
                 UserDomain = sUserName
             Else 'UPD
                 'read domain from Hashtable 
-                UserDomain = CICRadarR.NetBiosDomain & "\" & sUserName
+                UserDomain = RDSFactor.NetBiosDomain & "\" & sUserName
             End If
 
-            sid = EncDec.Encrypt(UserDomain & "_" & packet.UserPassword, CICRadarR.encCode)
-            CICRadarR.AccessLog("Checking for userHash " & sid)
+            sid = EncDec.Encrypt(UserDomain & "_" & packet.UserPassword, RDSFactor.encCode)
+            RDSFactor.AccessLog("Checking for userHash " & sid)
             If sid = state Then
                 packet.AcceptAccessRequest()
             Else
@@ -97,15 +97,15 @@ Public Class CitrixHandler
                 UserDomain = sUserName
             Else 'UPD
                 'read domain from Hashtable 
-                UserDomain = CICRadarR.NetBiosDomain & "\" & sUserName
+                UserDomain = RDSFactor.NetBiosDomain & "\" & sUserName
             End If
 
-            CICRadarR.AccessLog("User " & UserDomain & " is trying to log in ...")
+            RDSFactor.AccessLog("User " & UserDomain & " is trying to log in ...")
 
 
 
             Try
-                Dim dirEntry As New DirectoryEntry("LDAP://" & CICRadarR.LDAPDomain, UserDomain, sPassword)
+                Dim dirEntry As New DirectoryEntry("LDAP://" & RDSFactor.LDAPDomain, UserDomain, sPassword)
 
                 Dim obj As Object = dirEntry.NativeObject
                 Dim search As New DirectorySearcher(dirEntry)
@@ -118,17 +118,17 @@ Public Class CitrixHandler
                 'Load the Properties we need from AD
                 search.PropertiesToLoad.Add("distinguishedName")
                 'search.PropertiesToLoad.Add("primaryTelexNumber")
-                If CICRadarR.EnableOTP = True Then
-                    If CICRadarR.EnableEmail = True Then
-                        search.PropertiesToLoad.Add(CICRadarR.ADMailField)
+                If RDSFactor.EnableOTP = True Then
+                    If RDSFactor.EnableEmail = True Then
+                        search.PropertiesToLoad.Add(RDSFactor.ADMailField)
                     End If
-                    If CICRadarR.EnableSMS = True Then
-                        search.PropertiesToLoad.Add(CICRadarR.ADField)
+                    If RDSFactor.EnableSMS = True Then
+                        search.PropertiesToLoad.Add(RDSFactor.ADField)
                     End If
 
                 End If
                 ' Time to find out if user entered the correct username and pasword 
-                CICRadarR.AccessLog("Trying to authenticate user agains Active Directory using te following parameters: " & "LDAPPAth: " & "LDAP://" & CICRadarR.LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
+                RDSFactor.AccessLog("Trying to authenticate user agains Active Directory using te following parameters: " & "LDAPPAth: " & "LDAP://" & RDSFactor.LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
 
                 Dim result As SearchResult = search.FindOne()
                 'Get the setting form AD. Yes we uses the field primaryTelexNumber, for who the f... still users telex. (I bet half the people reading this code don't even know what a telex is!)
@@ -137,43 +137,43 @@ Public Class CitrixHandler
 
                 'Dim userLdap As String = "LDAP://" & LDAPPath & "/" & result.Properties("distinguishedName")(0)
                 'Dim userEntry As New DirectoryEntry(userLdap, UserDomain, sPassword)
-                If CICRadarR.EnableOTP = True Then
-                    smsCode = CICRadarR.GenerateCode()
+                If RDSFactor.EnableOTP = True Then
+                    smsCode = RDSFactor.GenerateCode()
 
                     ' REMEMBER to put at check for empty phone string
-                    If CICRadarR.EnableEmail = True Then
+                    If RDSFactor.EnableEmail = True Then
                         Try
-                            UserEmail = DirectCast(result.Properties(CICRadarR.ADMailField)(0), String)
+                            UserEmail = DirectCast(result.Properties(RDSFactor.ADMailField)(0), String)
 
                             If UserEmail.Trim.Length = 0 Or InStr(UserEmail, "@") = 0 Then
                                 success = False
-                                CICRadarR.AccessLog("Unable to find correct email for user " & UserDomain)
+                                RDSFactor.AccessLog("Unable to find correct email for user " & UserDomain)
                             Else
                                 success = True
                             End If
                         Catch
-                            CICRadarR.AccessLog("Unable to find correct email for user " & UserDomain)
+                            RDSFactor.AccessLog("Unable to find correct email for user " & UserDomain)
                             success = False
                         End Try
                     End If
-                    If CICRadarR.EnableSMS = True Then
+                    If RDSFactor.EnableSMS = True Then
                         Try
-                            mobile = DirectCast(result.Properties(CICRadarR.ADField)(0), String)
+                            mobile = DirectCast(result.Properties(RDSFactor.ADField)(0), String)
                             mobile = Replace(mobile, "+", "")
                             If mobile.Trim.Length = 0 Then
                                 success = False
-                                CICRadarR.AccessLog("Unable to find correct phone number for user " & UserDomain)
+                                RDSFactor.AccessLog("Unable to find correct phone number for user " & UserDomain)
                             Else
                                 success = True
                             End If
                         Catch
-                            CICRadarR.AccessLog("Unable to find correct phone number for user " & UserDomain)
+                            RDSFactor.AccessLog("Unable to find correct phone number for user " & UserDomain)
                             success = False
                         End Try
 
                     End If
 
-                    sid = EncDec.Encrypt(UserDomain & "_" & smsCode, CICRadarR.encCode) 'generate unique code
+                    sid = EncDec.Encrypt(UserDomain & "_" & smsCode, RDSFactor.encCode) 'generate unique code
                 End If
                 ' sid = UserDomain & "_" & smsCode
                 'userEntry.Properties("primaryTelexNumber").Value = aCode(0) & "/" & smsCode & "/" & aCode(2) & "/" & aCode(3)
@@ -199,7 +199,7 @@ Public Class CitrixHandler
                     success = False
                 End If
             Catch
-                CICRadarR.AccessLog("Failed to authenticate user agains Active Directory using the following parameters: " & "LDAPPAth: " & "LDAP://" & CICRadarR.LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
+                RDSFactor.AccessLog("Failed to authenticate user agains Active Directory using the following parameters: " & "LDAPPAth: " & "LDAP://" & RDSFactor.LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
                 success = False
             End Try
 
@@ -207,8 +207,8 @@ Public Class CitrixHandler
             Dim attributes As New RADIUSAttributes
             If success Then ' Yay! Someone guess the password ...
 
-                CICRadarR.AccessLog("User " & UserDomain & " authenticated agains Active Directory")
-                If CICRadarR.EnableOTP = True Then
+                RDSFactor.AccessLog("User " & UserDomain & " authenticated agains Active Directory")
+                If RDSFactor.EnableOTP = True Then
                     Dim attr As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, "SMS Token")
                     attributes.Add(attr)
                     Dim state As New RADIUSAttribute(RadiusAttributeType.State, sid)
@@ -219,22 +219,22 @@ Public Class CitrixHandler
                                          packet.Identifier, attributes, _
                                          packet.EndPoint), _
                         packet.Authenticator)
-                    If CICRadarR.EnableSMS = True Then
-                        CICRadarR.AccessLog("Sending access token: " & smsCode & " to phonenumber " & mobile)
-                        Call CICRadarR.SendSMS(mobile, smsCode)
+                    If RDSFactor.EnableSMS = True Then
+                        RDSFactor.AccessLog("Sending access token: " & smsCode & " to phonenumber " & mobile)
+                        Call RDSFactor.SendSMS(mobile, smsCode)
                     End If
-                    If CICRadarR.EnableEmail = True Then
-                        CICRadarR.AccessLog("Sending access token: " & smsCode & " to email " & UserEmail)
-                        Call CICRadarR.SendEmail(UserEmail, smsCode)
+                    If RDSFactor.EnableEmail = True Then
+                        RDSFactor.AccessLog("Sending access token: " & smsCode & " to email " & UserEmail)
+                        Call RDSFactor.SendEmail(UserEmail, smsCode)
                     End If
                 Else
-                    CICRadarR.AccessLog("One time Password not enabled, so we let the user in")
+                    RDSFactor.AccessLog("One time Password not enabled, so we let the user in")
                     packet.AcceptAccessRequest()
                 End If
                 ' packetHash.Remove(username.GetString & "_" & pass.GetString)
             Else ' Wrong username / password ...
 
-                CICRadarR.AccessLog("User " & UserDomain & " failed to authenticate against Active Directory")
+                RDSFactor.AccessLog("User " & UserDomain & " failed to authenticate against Active Directory")
                 Dim pk As New RADIUSPacket(RadiusPacketCode.AccessReject, packet.Identifier, Nothing, packet.EndPoint)
                 server.SendAsResponse(pk, packet.Authenticator)
                 ' FYI ... if no additional attributes need to be added
