@@ -97,7 +97,8 @@
 			{
 				culture = culture.Parent;
 			
-				foreach(System.IO.DirectoryInfo cultureDir in cultureDirectories)
+				foreach(System.IO.DirectoryInfo cultureDir in cultureDirectories)
+
 				{
 					System.Globalization.CultureInfo ci = System.Globalization.CultureInfo.CreateSpecificCulture(cultureDir.Name);
 
