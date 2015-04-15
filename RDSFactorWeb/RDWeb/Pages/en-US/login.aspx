@@ -6,7 +6,7 @@
 <% @Import Namespace="System.Security" %>
 <% @Import Namespace="Microsoft.TerminalServices.Publishing.Portal.FormAuthentication" %>
 <% @Import Namespace="Microsoft.TerminalServices.Publishing.Portal" %>
-<% @Import Namespace="RadiusClient" %>
+
 <script language="C#" runat=server>
 
     //
