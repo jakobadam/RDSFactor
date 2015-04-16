@@ -129,13 +129,19 @@ Public Class RDSFactor
         ProcessPacket(radius1645, packet)
     End Sub
 
-    Public Shared Sub AccessLog(ByVal message)
+    Public Shared Sub AccessLog(packet As RADIUSPacket, message As String)
+        Dim from_address = packet.EndPoint.Address.ToString
+        Dim log_message = Now & ": DEBUG: [" & packet.UserName & " " & from_address & "] " & message
+        AccessLog(log_message)
+    End Sub
+
+    Public Shared Sub AccessLog(message As String)
         If DEBUG = True Then
-            UserAccessLog.WriteLog(Now & ": DEBUG: " & message)
+            UserAccessLog.WriteLog(message)
 
             ' Also write to the console if not a service
             If Environment.UserInteractive Then
-                Console.WriteLine(Now & ": DEBUG: " & message)
+                Console.WriteLine(message)
             End If
         End If
     End Sub
