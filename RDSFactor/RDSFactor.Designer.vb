@@ -49,20 +49,21 @@ Partial Class RDSFactor
     ' Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.TimerCleanUpHash = New System.Timers.Timer()
-        CType(Me.TimerCleanUpHash, System.ComponentModel.ISupportInitialize).BeginInit()
+        Me.cleanupEvent = New System.Timers.Timer()
+        CType(Me.cleanupEvent, System.ComponentModel.ISupportInitialize).BeginInit()
         '
-        'TimerCleanUpHash
+        'cleanupEvent
         '
-        Me.TimerCleanUpHash.Enabled = True
-        Me.TimerCleanUpHash.Interval = 60000.0R
+        Me.cleanupEvent.Enabled = True
+        Me.cleanupEvent.Interval = 60000.0R
         '
-        'CICRadarR
+        'RDSFactor
         '
         Me.ServiceName = "Service1"
-        CType(Me.TimerCleanUpHash, System.ComponentModel.ISupportInitialize).EndInit()
+        CType(Me.cleanupEvent, System.ComponentModel.ISupportInitialize).EndInit()
 
     End Sub
-    Friend WithEvents TimerCleanUpHash As System.Timers.Timer
+
+    Public WithEvents cleanupEvent As System.Timers.Timer
 
 End Class

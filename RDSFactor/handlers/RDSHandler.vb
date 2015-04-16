@@ -5,10 +5,7 @@ Public Class RDSHandler
 
     Private Shared userSessions As New Hashtable
     Private Shared sessionTimestamps As New Hashtable
-
     Private Shared userSidTokens As New Hashtable
-    Private Shared tokenTimestamps As New Hashtable
-
     Private Shared userLaunchTimestamps As New Hashtable
 
     Private mPacket As RADIUSPacket
@@ -80,35 +77,58 @@ Public Class RDSHandler
         ' When the packet is an AppLaunchRequest the password attribute contains the session id!
         Dim packetSessionId = mPassword
         Dim storedSessionId = userSessions(mUsername)
-        Dim sessionTimestamp = sessionTimestamps(mUsername)
 
-        If storedSessionId = Nothing Or sessionTimestamp = Nothing Then
+        If storedSessionId = Nothing Then
             RDSFactor.AccessLog(mPacket, "User has no session. MUST re-authenticate!")
             mPacket.RejectAccessRequest()
             Exit Sub
         End If
 
-        If packetSessionId = storedSessionId Then
-            Dim minsSinceLastActivity = DateDiff(DateInterval.Minute, sessionTimestamp, Now)
-            If minsSinceLastActivity < RDSFactor.SessionTimeOut Then
-                RDSFactor.AccessLog(mPacket, "Opening window")
-                ' Pro-long session
-                sessionTimestamps(storedSessionId) = Now
-                ' Open launch window
-                userLaunchTimestamps(mUsername) = Now
-                mPacket.AcceptAccessRequest()
-                Exit Sub
-            Else
-                RDSFactor.AccessLog(mPacket, "Session timed out -- User MUST re-authenticate")
-                userSessions.Remove(mUsername)
-                sessionTimestamps.Remove(mUsername)
-            End If
-        Else
+        If Not storedSessionId = packetSessionId Then
             RDSFactor.AccessLog(mPacket, "Stored session id didn't match packet session id!")
+            mPacket.RejectAccessRequest()
+            Exit Sub
         End If
 
-        mPacket.RejectAccessRequest()
+        If HasValidSession(mUsername) Then
+            RDSFactor.AccessLog(mPacket, "Opening window")
+            ' Pro-long user session
+            sessionTimestamps(mUsername) = Now
+            ' Open gateway connection window
+            userLaunchTimestamps(mUsername) = Now
+            mPacket.AcceptAccessRequest()
+            Exit Sub
+        Else
+            RDSFactor.AccessLog(mPacket, "Session timed out -- User MUST re-authenticate")
+            userSessions.Remove(mUsername)
+            sessionTimestamps.Remove(mUsername)
+            mPacket.RejectAccessRequest()
+        End If
+
     End Sub
+
+    Public Shared Function HasValidLaunchWindow(username) As Boolean
+        Dim timestamp = userLaunchTimestamps(username)
+
+        Dim secondsSinceLaunch = DateDiff(DateInterval.Second, timestamp, Now)
+        If secondsSinceLaunch < RDSFactor.LaunchTimeOut Then
+            Return True
+        Else
+            Return False
+        End If
+    End Function
+
+    Public Shared Function HasValidSession(username) As Boolean
+        Dim id = userSessions(username)
+        Dim timestamp = sessionTimestamps(username)
+
+        Dim minsSinceLastActivity = DateDiff(DateInterval.Minute, timestamp, Now)
+        If minsSinceLastActivity < RDSFactor.SessionTimeOut Then
+            Return True
+        Else
+            Return False
+        End If
+    End Function
 
     ' Process the request from the Network Policy Server in the RDS Gateway.
     ' These are sent when an RDP client tries to connect through the Gateway.
@@ -140,16 +160,15 @@ Public Class RDSHandler
             attributes.Add(proxyState)
         End If
 
-        Dim secondsSinceLaunch = DateDiff(DateInterval.Second, launchTimestamp, Now)
-        If secondsSinceLaunch < RDSFactor.LaunchTimeOut Then
-            RDSFactor.AccessLog(mPacket, "Opening gateway connection window")
+        If HasValidLaunchWindow(mUsername) Then
+            RDSFactor.AccessLog(mPacket, "Opening gateway launch window")
             mPacket.AcceptAccessRequest(attributes)
         Else
-            RDSFactor.AccessLog(mPacket, "Gateway connection window has timed out!")
+            RDSFactor.AccessLog(mPacket, "Gateway launch window has timed out!")
+            mPacket.RejectAccessRequest()
         End If
 
-        RDSFactor.AccessLog(mPacket, "Removing gateway connection window")
-        ' close window
+        RDSFactor.AccessLog(mPacket, "Removing gateway launch window")
         userLaunchTimestamps.Remove(mUsername)
     End Sub
 
@@ -199,6 +218,7 @@ Public Class RDSHandler
 
         Dim sid = EncDec.Encrypt(mUsername & "_" & challangeCode, RDSFactor.encCode)
         If sid = state.ToString Then
+            userSidTokens.Remove(mUsername)
             Accept()
         Else
             mPacket.RejectAccessRequest()
@@ -211,7 +231,6 @@ Public Class RDSHandler
         RDSFactor.AccessLog(mPacket, "Access Challange Code: " & code)
 
         userSidTokens(mUsername) = sid
-        tokenTimestamps(mUsername) = Now
 
         If mUseSMSFactor Then
             RDSFactor.AccessLog(mPacket, "TODO: Send SMS")
@@ -281,6 +300,20 @@ Public Class RDSHandler
         End If
         Return email
     End Function
+
+    Public Shared Sub Cleanup()
+        RDSFactor.AccessLog("TimerCleanUp")
+
+        Dim users = New ArrayList(userSessions.Keys)
+        For Each username In users
+            If Not HasValidSession(username) Then
+                userSessions.Remove(username)
+                sessionTimestamps.Remove(username)
+                userLaunchTimestamps.Remove(username)
+                userSidTokens.Remove(username)
+            End If
+        Next
+    End Sub
 
 End Class
 
