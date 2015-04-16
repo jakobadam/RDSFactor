@@ -79,9 +79,7 @@
         }
 
         // gives us https://<machine>/rdweb/pages/<lang>/
-    //    baseUrl = new Uri(new Uri(Request.Url, Request.FilePath), ".");
-	 baseUrl = new Uri(new Uri(GetRealRequestUri(), Request.FilePath), ".");
-
+	    baseUrl = new Uri(new Uri(GetRealRequestUri(), Request.FilePath), ".");
         sLocalHelp = ConfigurationManager.AppSettings["LocalHelp"];
         if ((sLocalHelp != null) && (sLocalHelp == "true"))
         {
@@ -92,74 +90,17 @@
             sHelpSourceServer = "http://go.microsoft.com/fwlink/?LinkId=141038";
         }
         
-        try
-        {
-            strPrivateModeTimeout = ConfigurationManager.AppSettings["PrivateModeSessionTimeoutInMinutes"].ToString();
-            strPublicModeTimeout = ConfigurationManager.AppSettings["PublicModeSessionTimeoutInMinutes"].ToString();
-        }
-        catch (Exception objException)
-        {
-        }
 
-         try
-        {
-            
-            if (ConfigurationManager.AppSettings["OTP"].ToString().Equals("true", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        bOTP = true;
-                    }
-                    else
-                    {
-                         bOTP = false;
-                    }
-       
-        }
-        catch (Exception objException)
-        {
-          bOTP = false;
-        }
+        strPrivateModeTimeout = ConfigurationManager.AppSettings["PrivateModeSessionTimeoutInMinutes"];
+        strPublicModeTimeout = ConfigurationManager.AppSettings["PublicModeSessionTimeoutInMinutes"];
 
-        try
-        {
-            
-            if (ConfigurationManager.AppSettings["EnableSMS"].ToString().Equals("true", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        bEnableSMS = true;
-                    }
-                    else
-                    {
-                        bEnableSMS = false;
-                    }
-       
-        }
-        catch (Exception objException)
-        {
-          bEnableSMS = false;
-        }
-
-         try
-        {
-            
-            if (ConfigurationManager.AppSettings["EnableMail"].ToString().Equals("true", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        bEnableMail = true;
-                    }
-                    else
-                    {
-                        bEnableMail = false;
-                    }
-       
-        }
-        catch (Exception objException)
-        {
-          bEnableMail = false;
-        }
-
+        bOTP = ConfigurationManager.AppSettings["OTP"] == "true";
+        bEnableSMS = ConfigurationManager.AppSettings["EnableSMS"] == "true";
+        bEnableMail = ConfigurationManager.AppSettings["EnableMail"] == "true";
     }
 
     void Page_Load(object sender, EventArgs e)
     {
-
         if (!Page.IsPostBack)
         {
             Session["UserPass"] = "";
@@ -310,30 +251,29 @@
         Response.Cache.SetCacheability(HttpCacheability.NoCache);
     }
 
-public static Uri GetRealRequestUri()
- {
-     if ((HttpContext.Current == null) || 
-         (HttpContext.Current.Request == null))
-         throw new ApplicationException("Cannot get current request.");
-     return GetRealRequestUri(HttpContext.Current.Request);
- }
+    public static Uri GetRealRequestUri()
+    {
+        if ((HttpContext.Current == null) || 
+             (HttpContext.Current.Request == null))
+             throw new ApplicationException("Cannot get current request.");
+        return GetRealRequestUri(HttpContext.Current.Request);
+    }
 
- public static Uri GetRealRequestUri(HttpRequest request)
- {
-     if (String.IsNullOrEmpty(request.Headers["Host"]))
-       return request.Url;
-     UriBuilder ub = new UriBuilder(request.Url);
-     string[] realHost = request.Headers["Host"].Split(':');
-     string host = realHost[0];
-     ub.Host = host;
-     string portString = realHost.Length > 1 ? realHost[1] : "";
-     int port;
-     if (int.TryParse(portString, out port))
-         ub.Port = port;
-     return ub.Uri;
- }
+    public static Uri GetRealRequestUri(HttpRequest request)
+    {
+         if (String.IsNullOrEmpty(request.Headers["Host"]))
+           return request.Url;
+         UriBuilder ub = new UriBuilder(request.Url);
+         string[] realHost = request.Headers["Host"].Split(':');
+         string host = realHost[0];
+         ub.Host = host;
+         string portString = realHost.Length > 1 ? realHost[1] : "";
+         int port;
+         if (int.TryParse(portString, out port))
+             ub.Port = port;
+         return ub.Uri;
+    }
 
-    
     private void SafeRedirect(string strRedirectUrl)
     {
         string strRedirectSafeUrl = null;
@@ -347,7 +287,7 @@ public static Uri GetRealRequestUri()
                 redirectUri.Scheme.Equals(Request.Url.Scheme)
                )
             {
-                strRedirectSafeUrl = redirectUri.AbsoluteUri;   
+            strRedirectSafeUrl = redirectUri.AbsoluteUri;   
             }
 
         }
@@ -370,10 +310,9 @@ public static Uri GetRealRequestUri()
                 strRedirectSafeUrl = "smstoken.aspx";
            
             }
-         }
+        }
         Response.Redirect(strRedirectSafeUrl);       
     }
-
 </script>
 <RDWAPage 
     helpurl="<%=sHelpSourceServer%>" 

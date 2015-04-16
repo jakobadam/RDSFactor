@@ -84,15 +84,14 @@
         Label1.Text = (string)Session["Delivery"];
 
         bool Debug = true;
-        RADIUSClient myRadius = new RADIUSClient(RadiusServer, 1812, RadiusSecret);
+        RADIUSClient client = new RADIUSClient(RadiusServer, 1812, RadiusSecret);
         RADIUSAttributes atts = new RADIUSAttributes();
-        RADIUSPacket response = default(RADIUSPacket);
-        myRadius.Debug = Debug;
+        client.Debug = Debug;
         try {    
             VendorSpecificAttribute vsa = new VendorSpecificAttribute(VendorSpecificType.Generic,(string)Session["Delivery"]);
             vsa.SetRADIUSAttribute(ref atts);
-                
-            response = myRadius.Authenticate(username,strPassword, atts);
+
+            RADIUSPacket response = client.Authenticate(username, strPassword, atts);
                    
 	        if (response.Code == RadiusPacketCode.AccessChallenge) {
 		        state = response.Attributes.GetFirstAttribute(RadiusAttributeType.State);
