@@ -3,3 +3,4 @@
 *.Cache
 CICRadarR/bin/Debug/*.txt
 obj
+RDSFactorWeb/RDWeb/Pages/Log
