@@ -44,11 +44,6 @@ Public Class RDSFactor
     Private Shared SenderEmail As String = ""
 
     Private TSGW As String = ""
-    Private TSGWSessionIdHash As New Hashtable
-    Private TSGWSessionIdTimeStampHash As New Hashtable
-    Private TSGWLaunchIdTimeStampHash As New Hashtable
-    Private TSGWFirstLoginHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
-    Private TSGWFirstLoginTimeStampHash As New Hashtable ' Ensure that only one sms is send even if radius need to re-authenticate.
 
     Public Shared SessionTimeOut As Integer = 30 ' in minutes
     Public Shared LaunchTimeOut As Integer = 30 ' in seconds
@@ -129,13 +124,20 @@ Public Class RDSFactor
         ProcessPacket(radius1645, packet)
     End Sub
 
-    Public Shared Sub AccessLog(ByVal message)
+    Public Shared Sub AccessLog(packet As RADIUSPacket, message As String)
+        Dim from_address = packet.EndPoint.Address.ToString
+        message = "[" & packet.UserName & " " & from_address & "] " & message
+        AccessLog(message)
+    End Sub
+
+    Public Shared Sub AccessLog(message As String)
+        message = Now & ": DEBUG: " & message
         If DEBUG = True Then
-            UserAccessLog.WriteLog(Now & ": DEBUG: " & message)
+            UserAccessLog.WriteLog(message)
 
             ' Also write to the console if not a service
             If Environment.UserInteractive Then
-                Console.WriteLine(Now & ": DEBUG: " & message)
+                Console.WriteLine(message)
             End If
         End If
     End Sub
@@ -344,34 +346,10 @@ Public Class RDSFactor
             End If
             Return "FAILED"
         End Try
-
-
-
     End Function
 
-    Private Sub TimerCleanUpHash_Elapsed(sender As System.Object, e As System.Timers.ElapsedEventArgs) Handles TimerCleanUpHash.Elapsed
-        ' Clean Session and Launch hash for TSGW
-        Try
-            Dim Item As DictionaryEntry
-            For Each Item In TSGWSessionIdTimeStampHash
-                Dim hTime As DateTime = DirectCast(Item.Value, DateTime)
-                Dim tValid = DateDiff(DateInterval.Minute, hTime, Now)
-                If tValid >= SessionTimeOut Then
-                    TSGWSessionIdTimeStampHash.Remove(Item.Key)
-                    If TSGWSessionIdHash.Contains(Item.Key) Then
-                        TSGWSessionIdHash.Remove(Item.Key)
-                    End If
-                End If
-            Next
-
-            For Each Item In TSGWLaunchIdTimeStampHash
-                Dim hTime As DateTime = DirectCast(Item.Value, DateTime)
-                Dim tValid = DateDiff(DateInterval.Second, hTime, Now)
-                If tValid >= LaunchTimeOut Then
-                    TSGWLaunchIdTimeStampHash.Remove(Item.Key)
-                End If
-            Next
-        Catch
-        End Try
+    Public Sub CleanupEventHandler(sender, e) Handles cleanupEvent.Elapsed
+        RDSHandler.Cleanup()
     End Sub
+
 End Class

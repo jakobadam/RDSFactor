@@ -7,6 +7,8 @@ Imports RADAR
 ' Look in RDSHandler how this should be refactored.
 Public Class CitrixHandler
 
+    Private mPacket As RADIUSPacket
+
     Public Sub New(packet As RADIUSPacket)
 
     End Sub
@@ -17,7 +19,7 @@ Public Class CitrixHandler
         ' and drop other requests silently ...
 
         If packet.Code <> RadiusPacketCode.AccessRequest Then
-            RDSFactor.AccessLog("Not a valid radius packet.. Drop!")
+            RDSFactor.AccessLog(mPacket, "Not a valid radius packet.. Drop!")
             Exit Sub
         End If
 
@@ -36,11 +38,11 @@ Public Class CitrixHandler
         ' will return Nothing.
         If username Is Nothing Then
             ' Technically, this case is against RFC, so ... drop.
-            RDSFactor.AccessLog("Not a valid radius packet.. No username pressent.. Drop!")
+            RDSFactor.AccessLog(mPacket, "Not a valid radius packet.. No username pressent.. Drop!")
             Exit Sub
         End If
 
-        RDSFactor.AccessLog("Processing packet for user: " & username.ToString)
+        RDSFactor.AccessLog(mPacket, "Processing packet for user: " & username.ToString)
 
         'If packetHash.ContainsKey(username.GetString & "_" & pass.GetString) Then
         '    Exit Sub
@@ -49,16 +51,16 @@ Public Class CitrixHandler
 
 
         Dim existState As Boolean = packet.Attributes.AttributeExists(RadiusAttributeType.State)
-        RDSFactor.AccessLog("Packet contains a state attribute? State=" & existState.ToString)
+        RDSFactor.AccessLog(mPacket, "Packet contains a state attribute? State=" & existState.ToString)
         If existState = True Then  ' Ok we have at packet with the State attribute set. Check if we can identify the authtentication packet.
             Dim state As String = packet.Attributes.GetFirstAttribute(RadiusAttributeType.State).ToString
-            RDSFactor.AccessLog("Packet contains a state attribute State=" & state)
+            RDSFactor.AccessLog(mPacket, "Packet contains a state attribute State=" & state)
             Dim UserDomain As String = ""
             'lets see if user login using upd or UPN name
             Dim sUserName As String = username.ToString
             Dim sPassword As String = packet.UserPassword
 
-            RDSFactor.AccessLog("SMSToken supplied by user: " & sUserName)
+            RDSFactor.AccessLog(mPacket, "SMSToken supplied by user: " & sUserName)
 
             sid = ""
             If InStr(sUserName, "@") > 0 Then 'UPN
@@ -69,7 +71,7 @@ Public Class CitrixHandler
             End If
 
             sid = EncDec.Encrypt(UserDomain & "_" & packet.UserPassword, RDSFactor.encCode)
-            RDSFactor.AccessLog("Checking for userHash " & sid)
+            RDSFactor.AccessLog(mPacket, "Checking for userHash " & sid)
             If sid = state Then
                 packet.AcceptAccessRequest()
             Else
@@ -100,7 +102,7 @@ Public Class CitrixHandler
                 UserDomain = RDSFactor.NetBiosDomain & "\" & sUserName
             End If
 
-            RDSFactor.AccessLog("User " & UserDomain & " is trying to log in ...")
+            RDSFactor.AccessLog(mPacket, "User " & UserDomain & " is trying to log in ...")
 
 
 
@@ -128,7 +130,7 @@ Public Class CitrixHandler
 
                 End If
                 ' Time to find out if user entered the correct username and pasword 
-                RDSFactor.AccessLog("Trying to authenticate user agains Active Directory using te following parameters: " & "LDAPPAth: " & "LDAP://" & RDSFactor.LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
+                RDSFactor.AccessLog(mPacket, "Trying to authenticate user agains Active Directory using te following parameters: " & "LDAPPAth: " & "LDAP://" & RDSFactor.LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
 
                 Dim result As SearchResult = search.FindOne()
                 'Get the setting form AD. Yes we uses the field primaryTelexNumber, for who the f... still users telex. (I bet half the people reading this code don't even know what a telex is!)
@@ -147,12 +149,12 @@ Public Class CitrixHandler
 
                             If UserEmail.Trim.Length = 0 Or InStr(UserEmail, "@") = 0 Then
                                 success = False
-                                RDSFactor.AccessLog("Unable to find correct email for user " & UserDomain)
+                                RDSFactor.AccessLog(mPacket, "Unable to find correct email for user " & UserDomain)
                             Else
                                 success = True
                             End If
                         Catch
-                            RDSFactor.AccessLog("Unable to find correct email for user " & UserDomain)
+                            RDSFactor.AccessLog(mPacket, "Unable to find correct email for user " & UserDomain)
                             success = False
                         End Try
                     End If
@@ -162,12 +164,12 @@ Public Class CitrixHandler
                             mobile = Replace(mobile, "+", "")
                             If mobile.Trim.Length = 0 Then
                                 success = False
-                                RDSFactor.AccessLog("Unable to find correct phone number for user " & UserDomain)
+                                RDSFactor.AccessLog(mPacket, "Unable to find correct phone number for user " & UserDomain)
                             Else
                                 success = True
                             End If
                         Catch
-                            RDSFactor.AccessLog("Unable to find correct phone number for user " & UserDomain)
+                            RDSFactor.AccessLog(mPacket, "Unable to find correct phone number for user " & UserDomain)
                             success = False
                         End Try
 
@@ -183,12 +185,12 @@ Public Class CitrixHandler
                     'If userHash.ContainsKey(sid) Then
                     '    userHash(sid) = sPassword
                     '    If DEBUG = True Then
-                    '        CICRadarR.AccessLog("Updating userHash " & sid)
+                    '        CICRadarR.AccessLog(mPacket, "Updating userHash " & sid)
                     '    End If
                     'Else
                     '    userHash.Add(sid, sPassword)
                     '    If DEBUG = True Then
-                    '        CICRadarR.AccessLog("Adding userHash " & sid)
+                    '        CICRadarR.AccessLog(mPacket, "Adding userHash " & sid)
                     '    End If
                     'End If
                     ' new code stored in AD now send it to the users phone
@@ -199,7 +201,7 @@ Public Class CitrixHandler
                     success = False
                 End If
             Catch
-                RDSFactor.AccessLog("Failed to authenticate user agains Active Directory using the following parameters: " & "LDAPPAth: " & "LDAP://" & RDSFactor.LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
+                RDSFactor.AccessLog(mPacket, "Failed to authenticate user agains Active Directory using the following parameters: " & "LDAPPAth: " & "LDAP://" & RDSFactor.LDAPDomain & ", Username: " & UserDomain & ", Password: " & sPassword)
                 success = False
             End Try
 
@@ -207,7 +209,7 @@ Public Class CitrixHandler
             Dim attributes As New RADIUSAttributes
             If success Then ' Yay! Someone guess the password ...
 
-                RDSFactor.AccessLog("User " & UserDomain & " authenticated agains Active Directory")
+                RDSFactor.AccessLog(mPacket, "User " & UserDomain & " authenticated agains Active Directory")
                 If RDSFactor.EnableOTP = True Then
                     Dim attr As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, "SMS Token")
                     attributes.Add(attr)
@@ -220,21 +222,21 @@ Public Class CitrixHandler
                                          packet.EndPoint), _
                         packet.Authenticator)
                     If RDSFactor.EnableSMS = True Then
-                        RDSFactor.AccessLog("Sending access token: " & smsCode & " to phonenumber " & mobile)
+                        RDSFactor.AccessLog(mPacket, "Sending access token: " & smsCode & " to phonenumber " & mobile)
                         Call RDSFactor.SendSMS(mobile, smsCode)
                     End If
                     If RDSFactor.EnableEmail = True Then
-                        RDSFactor.AccessLog("Sending access token: " & smsCode & " to email " & UserEmail)
+                        RDSFactor.AccessLog(mPacket, "Sending access token: " & smsCode & " to email " & UserEmail)
                         Call RDSFactor.SendEmail(UserEmail, smsCode)
                     End If
                 Else
-                    RDSFactor.AccessLog("One time Password not enabled, so we let the user in")
+                    RDSFactor.AccessLog(mPacket, "One time Password not enabled, so we let the user in")
                     packet.AcceptAccessRequest()
                 End If
                 ' packetHash.Remove(username.GetString & "_" & pass.GetString)
             Else ' Wrong username / password ...
 
-                RDSFactor.AccessLog("User " & UserDomain & " failed to authenticate against Active Directory")
+                RDSFactor.AccessLog(mPacket, "User " & UserDomain & " failed to authenticate against Active Directory")
                 Dim pk As New RADIUSPacket(RadiusPacketCode.AccessReject, packet.Identifier, Nothing, packet.EndPoint)
                 server.SendAsResponse(pk, packet.Authenticator)
                 ' FYI ... if no additional attributes need to be added
