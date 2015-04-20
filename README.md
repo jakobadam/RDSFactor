@@ -18,6 +18,11 @@ RDSfactor comes with a customized version of the RDWeb pages. To install these r
 ```
 $ install-web.bat
 ```
+
+After install go and configure the application in IIS. RDWeb -> Pages -> Application Settings. You should configure the following settings:
+* RadiusServer (IP of the radius server)
+* RadiusSecret (Shared secret used for encryption of RADIUS traffic)
+
 ### RADIUS server installation
 
 The RADIUS server component can be installed on any server reacheable by both the RD Web and the RD Gateway. To install the server as a service run:
