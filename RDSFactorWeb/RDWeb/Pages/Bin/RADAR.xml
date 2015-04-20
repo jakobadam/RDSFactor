@@ -6,20 +6,7 @@ RADAR
 </name>
 </assembly>
 <members>
-<member name="P:RADAR.My.Resources.Resources.ResourceManager">
-	<summary>
-  Returns the cached ResourceManager instance used by this class.
-</summary>
-</member><member name="P:RADAR.My.Resources.Resources.Culture">
-	<summary>
-  Overrides the current thread's CurrentUICulture property for all
-  resource lookups using this strongly typed resource class.
-</summary>
-</member><member name="T:RADAR.My.Resources.Resources">
-	<summary>
-  A strongly-typed resource class, for looking up localized strings, etc.
-</summary>
-</member><member name="P:RADAR.RADIUSPacket.UserName">
+<member name="P:RADAR.RADIUSPacket.UserName">
 	<summary>
  Returns the username supplied in an Access Request. Returns 
  Nothing if a User-Name attribute is missing or the packet is not an 
@@ -61,6 +48,19 @@ RADAR
  Reject the access request.
  </summary>
 	<remarks></remarks>
+</member><member name="P:RADAR.My.Resources.Resources.ResourceManager">
+	<summary>
+  Returns the cached ResourceManager instance used by this class.
+</summary>
+</member><member name="P:RADAR.My.Resources.Resources.Culture">
+	<summary>
+  Overrides the current thread's CurrentUICulture property for all
+  resource lookups using this strongly typed resource class.
+</summary>
+</member><member name="T:RADAR.My.Resources.Resources">
+	<summary>
+  A strongly-typed resource class, for looking up localized strings, etc.
+</summary>
 </member>
 </members>
 </doc>
