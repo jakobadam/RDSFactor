@@ -2,7 +2,10 @@
 <?xml-stylesheet type="text/xsl" href="../Site.xsl"?>
 <?xml-stylesheet type="text/css" href="../RenderFail.css"?>
 <% @Page Language="C#" Debug="false" ResponseEncoding="utf-8" ContentType="text/xml" %>
+
 <% @Import Namespace="System" %>
+<% @Import Namespace="System.IO" %>
+<% @Import Namespace="System.Web.Helpers"  %>
 <% @Import Namespace="System.Threading" %>
 <% @Import Namespace="System.Security" %>
 <% @Import Namespace="Microsoft.TerminalServices.Publishing.Portal.FormAuthentication" %>
@@ -71,7 +74,8 @@
 
     void Page_Load(object sender, EventArgs e)
     {
-       
+        logit("pageload");
+        
         btnSignIn.Text = L_SubmitLabel_Text;
         btnCancel.Text = L_CancelLabel_Text;
 
@@ -87,18 +91,25 @@
         RADIUSClient client = new RADIUSClient(RadiusServer, 1812, RadiusSecret);
         RADIUSAttributes atts = new RADIUSAttributes();
         client.Debug = Debug;
+        
         try {    
             VendorSpecificAttribute vsa = new VendorSpecificAttribute(VendorSpecificType.Generic,(string)Session["Delivery"]);
             vsa.SetRADIUSAttribute(ref atts);
 
+            logit("AccessReqeust");
+            
             RADIUSPacket response = client.Authenticate(username, strPassword, atts);
                    
 	        if (response.Code == RadiusPacketCode.AccessChallenge) {
+                logit("Challange");
+                
 		        state = response.Attributes.GetFirstAttribute(RadiusAttributeType.State);
                 Session["State"] = state;      
             }
             // Access-Accept
             else if (response.Code == RadiusPacketCode.AccessAccept) {
+                logit("Accept");
+                
                 string sessionGuid =  response.Attributes.GetFirstAttribute(RadiusAttributeType.ReplyMessage).GetString(); 
                 Session["SESSIONGUID"] = sessionGuid;
                 HttpCookie myCookie = new HttpCookie("RadiusSessionId");
@@ -172,18 +183,26 @@
 
         Response.Redirect(strRedirectSafeUrl,false);       
     }
+        
+    public void logit(String message) { 
+        String path = "C:\\RDSFactor\\RDSFactorWeb\\RDWeb\\Pages\\log\\web.log";
+        message = DateTime.Now + ": " + message;
+        using (StreamWriter log = File.AppendText(path)) {
+            log.WriteLine(message);
+        }
+    }
 
     protected void btnSignIn_Click(object sender, EventArgs e)
     {
-
         username = (string)Session["DomainUserName"];  
         state = (RADIUSAttribute)Session["state"];
         
-        RADIUSClient myRadius = new RADIUSClient(RadiusServer, 1812, RadiusSecret);
+        RADIUSClient client = new RADIUSClient(RadiusServer, 1812, RadiusSecret);
         RADIUSAttributes atts = new RADIUSAttributes();
 
 		atts.Add(state);
-		RADIUSPacket response = myRadius.Authenticate(username, SmsToken.Text, atts);
+        String encryptedChallangeResult = Crypto.SHA256(username + SmsToken.Text + RadiusSecret);
+        RADIUSPacket response = client.Authenticate(username, encryptedChallangeResult, atts);
 
         if (response.Code == RadiusPacketCode.AccessAccept)
         {

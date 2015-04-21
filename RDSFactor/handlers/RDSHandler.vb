@@ -1,12 +1,19 @@
 ﻿Imports System.DirectoryServices
+Imports System.Web.Helpers
 Imports RADAR
 
 Public Class RDSHandler
 
+    ' User -> Token that proves user has authenticated, but not yet proved
+    ' herself with the 2. factor
+    Private Shared authTokens As New Hashtable
+
     Private Shared userSessions As New Hashtable
     Private Shared sessionTimestamps As New Hashtable
-    Private Shared userSidTokens As New Hashtable
+    Private Shared encryptedChallangeResults As New Hashtable
     Private Shared userLaunchTimestamps As New Hashtable
+
+    
 
     Private mPacket As RADIUSPacket
     Private mUsername As String
@@ -210,27 +217,41 @@ Public Class RDSHandler
     End Sub
 
     Private Sub ProcessChallengeResponse()
-        RDSFactor.AccessLog(mPacket, "ChallengeResponse")
+        Dim authToken = mPacket.Attributes.GetFirstAttribute(RadiusAttributeType.State).ToString
+        If Not authToken = authTokens(mUsername) Then
+            Throw New Exception("User is trying to respond to challange without valid auth token")
+        End If
 
-        ' When the packet is an Challange-Response the password attr. contains the token
-        Dim challangeCode = mPassword
-        Dim state = mPacket.Attributes.GetFirstAttribute(RadiusAttributeType.State)
+        ' When the packet is an Challange-Response the password attr. contains the encrypted result
+        Dim userEncryptedResult = mPassword
+        Dim localEncryptedResult = encryptedChallangeResults(mUsername)
 
-        Dim sid = EncDec.Encrypt(mUsername & "_" & challangeCode, RDSFactor.encCode)
-        If sid = state.ToString Then
-            userSidTokens.Remove(mUsername)
+        If localEncryptedResult = userEncryptedResult Then
+            RDSFactor.AccessLog(mPacket, "ChallengeResponse Success")
+            encryptedChallangeResults.Remove(mUsername)
+            authTokens.Remove(mUsername)
             Accept()
         Else
+            RDSFactor.AccessLog(mPacket, "Wrong challange code!")
             mPacket.RejectAccessRequest()
         End If
     End Sub
 
     Private Sub TwoFactorChallenge()
-        Dim code = RDSFactor.GenerateCode
-        Dim sid = EncDec.Encrypt(mUsername & "_" & code, RDSFactor.encCode) 'generate unique code
-        RDSFactor.AccessLog(mPacket, "Access Challange Code: " & code)
+        Dim challangeCode = RDSFactor.GenerateCode
+        Dim authToken = System.Guid.NewGuid.ToString
+        Dim clientIP = mPacket.EndPoint.Address.ToString
+        Dim sharedSecret = RDSFactor.secrets(clientIP)
 
-        userSidTokens(mUsername) = sid
+        RDSFactor.AccessLog(mPacket, "Access Challange Code: " & challangeCode)
+
+        If sharedSecret = Nothing Then
+            Throw New Exception("No shared secret for client:" & clientIP)
+        End If
+
+        authTokens(mUsername) = authToken
+        Dim encryptedChallangeResult = Crypto.SHA256(mUsername & challangeCode & sharedSecret)
+        encryptedChallangeResults(mUsername) = encryptedChallangeResult
 
         If mUseSMSFactor Then
             RDSFactor.AccessLog(mPacket, "TODO: Send SMS")
@@ -242,11 +263,11 @@ Public Class RDSHandler
 
         Dim attributes As New RADIUSAttributes
 
-        Dim attr As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, "SMS Token")
-        Dim state As New RADIUSAttribute(RadiusAttributeType.State, sid)
+        Dim replyMessageAttr As New RADIUSAttribute(RadiusAttributeType.ReplyMessage, "SMS Token")
+        Dim stateAttr As New RADIUSAttribute(RadiusAttributeType.State, authToken)
 
-        attributes.Add(attr)
-        attributes.Add(state)
+        attributes.Add(replyMessageAttr)
+        attributes.Add(stateAttr)
 
         mPacket.SendAccessChallange(attributes)
     End Sub
@@ -310,7 +331,8 @@ Public Class RDSHandler
                 userSessions.Remove(username)
                 sessionTimestamps.Remove(username)
                 userLaunchTimestamps.Remove(username)
-                userSidTokens.Remove(username)
+                encryptedChallangeResults.Remove(username)
+                authTokens.Remove(username)
             End If
         Next
     End Sub

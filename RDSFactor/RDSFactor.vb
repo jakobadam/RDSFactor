@@ -15,17 +15,14 @@ Public Class RDSFactor
     Public Shared ADField As String = ""
     Public Shared ADMailField As String = ""
     Public Shared EnableOTP As Boolean
-
-    ' Shared key: used for challange encryption
-    ' TODO: Fix
-    Public Shared encCode As String = "gewsyy#sjs2!"
+    Public Shared secrets As NASAuthList
 
     Private Shared DEBUG As Boolean
 
     Private Shared UserAccessLog As New LogWriter
     Private Shared Log As New LogWriter
 
-    Private secrets As NASAuthList
+
     Private radius1812 As RADIUSServer
     Private radius1645 As RADIUSServer
     Private userHash As New Hashtable
@@ -160,7 +157,7 @@ Public Class RDSFactor
         If TSGW = "1" Then
             handler = New RDSHandler(packet)
         Else
-            handler = New CitrixHandler(packet)
+            'handler = New CitrixHandler(packet)
         End If
 
         handler.ProcessRequest()
@@ -254,7 +251,7 @@ Public Class RDSFactor
 
             For i As Integer = 0 To ClientArray.Length - 1
                 ServerLog("Loading Shared Secret for Client: " & ClientArray(i))
-                clientHash.Add(ClientArray(i), EncDec.Decrypt(RConfig.GetKeyValue("Clients", ClientArray(i)), encCode))
+                clientHash.Add(ClientArray(i), EncDec.Decrypt(RConfig.GetKeyValue("Clients", ClientArray(i)), "gewsyy#sjs2!"))
             Next
 
             If ConfOk = True Then
