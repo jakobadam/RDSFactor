@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<% @Page Language="C#" Debug="false" ResponseEncoding="utf-8" ContentType="text/xml" %>
+<% @Page Language="C#" Debug="true" ResponseEncoding="utf-8" ContentType="text/xml" %>
 <% @Import Namespace="System.Globalization" %>
 <% @Import Namespace="System.Web.Configuration" %>
 <% @Import Namespace="System.Security" %>
