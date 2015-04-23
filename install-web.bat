@@ -14,10 +14,13 @@ appcmd delete app "Default Web Site/RDWeb/Pages"
 
 echo ==^> Adding RDSFactor RDWeb Pages to IIS
 appcmd add app /site.name:"Default Web Site" /path:/RDWeb/Pages /physicalPath:"%RDSFACTOR_PAGES%
+appcmd set app "Default Web Site/RDWeb/Pages" /applicationPool:RDWebAccess
 
-:: list available config settings: appcmd unlock config -section:?
-
+:: Allow the application to configure authentication settings
 appcmd unlock config -section:system.webServer/security/authentication/anonymousAuthentication
 appcmd unlock config -section:system.webServer/security/authentication/windowsAuthentication
+
+:: list available config settings: appcmd unlock config -section:?
+:: These settings are also avail. from IIS -> Feature Delegation
 
 echo ==^> IIS updated with RDSFactor pages
