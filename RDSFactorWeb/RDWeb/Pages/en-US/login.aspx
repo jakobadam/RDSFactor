@@ -28,6 +28,7 @@
     const string L_LogonFailureLabel_Text = "The user name or password that you entered is not valid. Try typing it again.";
     const string L_LogonSMSFailureLabel_Text = "The token code that you entered is not valid. Try again.";
     const string L_LogonRadiusFailureLabel_Text = "The radius server did not respond. Check radius configuration or give it another try.";
+    const string L_SessionExpired_Text = "The session has expired. Please login again.";
     const string L_DomainNameMissingLabel_Text = "You must enter a valid domain name.";
     const string L_AuthorizationFailureLabel_Text = "You aren’t authorized to log on to this connection.  Contact your system administrator for authorization.";
     const string L_ServerConfigChangedLabel_Text = "Your RD Web Access session expired due to configuration changes on the remote computer.  Please sign in again.";
@@ -63,6 +64,7 @@
     public Uri baseUrl;
     public bool bEnableSMS = false;
     public bool bEnableMail = false;
+    public bool bSessionExpired = false;
     public string strPrivateModeTimeout = "240";
     public string strPublicModeTimeout = "20";
 
@@ -121,7 +123,7 @@
                 else
                 {
                     strReturnUrlPage = objQueryString["ReturnUrl"].ToLower();
-                    strReturnUrl = "?ReturnUrl=" + HttpUtility.UrlEncode(strReturnUrlPage.Replace("default.aspx", "smstoken.aspx")); 
+                    strReturnUrl = "?ReturnUrl=" + HttpUtility.UrlEncode(strReturnUrlPage.Replace("default.aspx", "tokenform.aspx")); 
                 }
             }
             if ( objQueryString["Error"] != null )
@@ -129,6 +131,10 @@
                 if ( objQueryString["Error"].Equals("WkSInUse", StringComparison.CurrentCultureIgnoreCase) )
                 {
                     bWorkspaceInUse = true;
+                }
+                else if (objQueryString["Error"].Equals("SessionExpired"))
+                {
+                    bSessionExpired = true;
                 }
                 else if ( objQueryString["Error"].Equals("WkSDisconnected", StringComparison.CurrentCultureIgnoreCase) )
                 {
@@ -307,7 +313,7 @@
                 Session["UserPass"] = UserPass;
                 Session["DomainUserName"]= DomainUserName;
                 Session["Delivery"] =  Delivery;
-                strRedirectSafeUrl = "smstoken.aspx";
+                strRedirectSafeUrl = "tokenform.aspx";
            
             }
         }
@@ -544,6 +550,26 @@
                 </table>
             </td>
             </tr>
+
+    <%
+    strErrorMessageRowStyle = "style=\"display:none\"";
+    if ( bSessionExpired == true )
+    {
+    strErrorMessageRowStyle = "style=\"display:\"";
+    }
+    %>
+          <tr id="tr2" <%=strErrorMessageRowStyle%> >
+            <td>
+                <table>
+                <tr>
+                    <td height="20">&#160;</td>
+                </tr>
+                <tr>
+                    <td><span class="wrng"><%=L_SessionExpired_Text %></span></td>
+                </tr>
+                </table>
+            </td>
+          </tr>
 
     <%
     strErrorMessageRowStyle = "style=\"display:none\"";

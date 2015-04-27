@@ -27,6 +27,7 @@
         <xsl:apply-templates select="Style"/>
           
         <script language="javascript" type="text/javascript" src='../renderscripts.js'/>
+        <script language="javascript" type="text/javascript" src='../jquery-1.11.2.min.js'/>
         <script language="javascript" type="text/javascript">
           var sHelpSource = &quot;<xsl:value-of select="@helpurl"/>&quot;;          
           <xsl:value-of select="HeaderJS[1]"/>
@@ -644,13 +645,19 @@
 
 
       function goRDP(pid, rdpContents, url) {
-
-
-      var wnd = window.open("token.aspx?User=" + getUserNameRdpProperty(), "Launch application","location=0,status=0,scrollbars=0, width=200,height=100");
-      <!--wnd.addEventListener('load', wnd.doSomething, true);-->
-      setTimeout(function() {
-      wnd.close();
-      }, 2000);
+        // validate RADIUS token before continuing
+        // logout if not valid.
+        $.ajax("checktoken.aspx", {
+          success: function(){
+            oldGoRDP(pid, rdpContents, url);
+          },
+          error: function(xhr, status, error){
+            window.location.href = strBaseUrl + 'logoff.aspx?Error=SessionExpired';
+          }
+        });
+      }
+      
+      function oldGoRDP(pid, rdpContents, url){
 
       if (ActiveXMode) {
       

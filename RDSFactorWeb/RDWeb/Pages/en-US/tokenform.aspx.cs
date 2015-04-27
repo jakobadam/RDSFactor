@@ -21,10 +21,10 @@ public partial class SMSToken : System.Web.UI.Page
     public const string L_LogonFailureLabel_Text = "The user name or password that you entered is not valid. Try typing it again.";
     public const string L_SubmitLabel_Text = "Submit";
     public const string L_CancelLabel_Text = "Cancel";
+
     //
     // Page Variables
     //
-
     public string sHelpSourceServer, sLocalHelp, strWorksSpaceName;
     public Uri baseUrl;
 
