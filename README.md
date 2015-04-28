@@ -49,5 +49,9 @@ $ restart-server.bat
 
 ## Acknowledgements
 
-* Claus Isager - for the proof of concept two factor RDS authentication 
+* Claus Isager - for the first Open Source two factor RDS authenticator; which this project is based upon.
 * Nikolay Semov - for the core RADIUS server 
+
+## License
+
+RDS Factor is an open source project, sponsored by [Origo Systems A/S](https://origo.io), under the GNU general public license version 3.
