@@ -113,12 +113,6 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="SMSModem.vb" />
-    <Compile Include="TestService.Designer.vb">
-      <DependentUpon>TestService.vb</DependentUpon>
-    </Compile>
-    <Compile Include="TestService.vb">
-      <SubType>Form</SubType>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="RDSFactor.resx">
@@ -132,9 +126,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="ProjectInstaller.resx">
       <DependentUpon>ProjectInstaller.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="TestService.resx">
-      <DependentUpon>TestService.vb</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

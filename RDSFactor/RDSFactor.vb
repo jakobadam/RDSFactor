@@ -53,24 +53,7 @@ Public Class RDSFactor
         StartUpServer()
     End Sub
 
-    Public Sub OnstartTest()
-        Log.filePath = ApplicationPath() & "\log.txt"
-        UserAccessLog.filePath = ApplicationPath() & "\UserAccessLog.txt"
-
-        ServerLog("---------------------------------------------------------------------------------------------------")
-        ServerLog("Starting Service")
-        ServerLog("Loading Configuration...")
-        loadConfiguration()
-        ServerLog("Starting Radius listner ports...")
-        StartUpServer()
-    End Sub
-
     Protected Overrides Sub OnStop()
-        ServerLog("Stopping Radius listner ports...")
-
-    End Sub
-
-    Public Sub OnStopTest()
         ServerLog("Stopping Radius listner ports...")
     End Sub
 
@@ -98,12 +81,13 @@ Public Class RDSFactor
             Exit Sub
         End If
 
-        Dim handler
-        If TSGW = "1" Then
-            handler = New RDSHandler(packet)
-        Else
-            'handler = New CitrixHandler(packet)
-        End If
+        Dim handler = New RDSHandler(packet)
+
+        ' If TSGW = "1" Then
+        '   handler = New RDSHandler(packet)
+        ' Else
+        '   handler = New CitrixHandler(packet)
+        ' End If
 
         handler.ProcessRequest()
     End Sub
