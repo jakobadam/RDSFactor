@@ -15,7 +15,6 @@ Public Class RDSFactor
     Public Shared ADField As String = ""
     Public Shared ADMailField As String = ""
     Public Shared EnableOTP As Boolean
-    Public Shared NetBiosDomain As String = ""
     Public Shared secrets As NASAuthList
 
     Public Shared SessionTimeOut As Integer = 30 ' in minutes
@@ -141,11 +140,7 @@ Public Class RDSFactor
         Try
             RConfig.Load(ApplicationPath() & "\conf\RDSFactor.ini")
             DEBUG = RConfig.GetKeyValue("RDSFactor", "Debug")
-            NetBiosDomain = RConfig.GetKeyValue("RDSFactor", "NetBiosDomain")
-            If NetBiosDomain.Length = 0 Then
-                ServerLog("ERROR: NetBiosDomain can not be empty")
-                ConfOk = False
-            End If
+
             LDAPDomain = RConfig.GetKeyValue("RDSFactor", "LDAPDomain")
             If LDAPDomain.Length = 0 Then
                 ServerLog("ERROR: LDAPDomain can not be empty")
