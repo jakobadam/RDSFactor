@@ -111,10 +111,11 @@ Public Class RDSFactor
     End Sub
 
     Public Shared Sub ServerLog(ByVal message)
-        Log.WriteLog(Now & ":" & message)
+        message = Now & ": " & message
+        Log.WriteLog(message)
         ' Also write to the console if not a service
         If Environment.UserInteractive Then
-            Console.WriteLine(Now & message)
+            Console.WriteLine(message)
         End If
     End Sub
 
@@ -138,54 +139,54 @@ Public Class RDSFactor
         Dim ConfOk As Boolean = True
         Dim RConfig As New IniFile
         Try
-            RConfig.Load(ApplicationPath() & "\CICRadarR.ini")
-            DEBUG = RConfig.GetKeyValue("CICRadarR", "Debug")
-            NetBiosDomain = RConfig.GetKeyValue("CICRadarR", "NetBiosDomain")
+            RConfig.Load(ApplicationPath() & "\conf\RDSFactor.ini")
+            DEBUG = RConfig.GetKeyValue("RDSFactor", "Debug")
+            NetBiosDomain = RConfig.GetKeyValue("RDSFactor", "NetBiosDomain")
             If NetBiosDomain.Length = 0 Then
                 ServerLog("ERROR: NetBiosDomain can not be empty")
                 ConfOk = False
             End If
-            LDAPDomain = RConfig.GetKeyValue("CICRadarR", "LDAPDomain")
+            LDAPDomain = RConfig.GetKeyValue("RDSFactor", "LDAPDomain")
             If LDAPDomain.Length = 0 Then
                 ServerLog("ERROR: LDAPDomain can not be empty")
                 ConfOk = False
             End If
 
-            TSGW = RConfig.GetKeyValue("CICRadarR", "TSGW")
+            TSGW = RConfig.GetKeyValue("RDSFactor", "TSGW")
 
-            EnableOTP = RConfig.GetKeyValue("CICRadarR", "EnableOTP")
+            EnableOTP = RConfig.GetKeyValue("RDSFactor", "EnableOTP")
 
             If EnableOTP = True Then
-                If RConfig.GetKeyValue("CICRadarR", "EnableEmail") = "1" Then
+                If RConfig.GetKeyValue("RDSFactor", "EnableEmail") = "1" Then
                     EnableEmail = True
-                    SenderEmail = RConfig.GetKeyValue("CICRadarR", "SenderEmail")
-                    MailServer = RConfig.GetKeyValue("CICRadarR", "MailServer")
-                    ADMailField = RConfig.GetKeyValue("CICRadarR", "ADMailField")
+                    SenderEmail = RConfig.GetKeyValue("RDSFactor", "SenderEmail")
+                    MailServer = RConfig.GetKeyValue("RDSFactor", "MailServer")
+                    ADMailField = RConfig.GetKeyValue("RDSFactor", "ADMailField")
                 End If
 
-                ADField = RConfig.GetKeyValue("CICRadarR", "ADField")
+                ADField = RConfig.GetKeyValue("RDSFactor", "ADField")
                 If ADField.Length = 0 Then
                     ServerLog("ERROR:  ADField can not be empty")
                     ConfOk = False
                 End If
 
-                If RConfig.GetKeyValue("CICRadarR", "EnableSMS") = "1" Then
+                If RConfig.GetKeyValue("RDSFactor", "EnableSMS") = "1" Then
                     EnableSMS = True
-                    ModemType = RConfig.GetKeyValue("CICRadarR", "USELOCALMODEM")
+                    ModemType = RConfig.GetKeyValue("RDSFactor", "USELOCALMODEM")
                     Select Case ModemType
                         Case "0"
-                            Provider = RConfig.GetKeyValue("CICRadarR", "Provider")
+                            Provider = RConfig.GetKeyValue("RDSFactor", "Provider")
                             If Provider.Length = 0 Then
                                 ServerLog("ERROR:  Provider can not be empty")
                                 ConfOk = False
                             End If
                         Case "1"
-                            ComPort = RConfig.GetKeyValue("CICRadarR", "COMPORT")
+                            ComPort = RConfig.GetKeyValue("RDSFactor", "COMPORT")
                             If ComPort.Length = 0 Then
                                 ServerLog("ERROR:  ComPort can not be empty")
                                 ConfOk = False
                             End If
-                            SmsC = RConfig.GetKeyValue("CICRadarR", "SMSC")
+                            SmsC = RConfig.GetKeyValue("RDSFactor", "SMSC")
                             If SmsC.Length = 0 Then
                                 ServerLog("ERROR:  SMSC can not be empty. See http://smsclist.com/downloads/default.txt for valid values")
                                 ConfOk = False
@@ -199,7 +200,7 @@ Public Class RDSFactor
             End If
 
             Dim ClientList As String = ""
-            ClientList = RConfig.GetKeyValue("CICRadarR", "ClientList")
+            ClientList = RConfig.GetKeyValue("RDSFactor", "ClientList")
 
             Dim ClientArray() As String
             ClientArray = Split(ClientList, ",")
@@ -215,7 +216,7 @@ Public Class RDSFactor
                 ServerLog("Loading Configuration...FAILED")
             End If
         Catch
-            ServerLog("ERROR: Missing CICRadarR.ini from startup path or CICRadarR.ini contains invalid configuration")
+            ServerLog("ERROR: Missing RDSFactor.ini from startup path or RDSFactor.ini contains invalid configuration")
             ServerLog("Loading Configuration...FAILED")
             End
         End Try
