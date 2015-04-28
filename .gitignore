@@ -1,9 +1,7 @@
 *.suo
 *.TMP
 *.Cache
-RDSFactor/bin
 _pages_old
 obj
-RDSFactorWeb/RDWeb/Pages/Log
-RDSFactor/bin/*
-RDSFactorConfig/bin
+web/RDWeb/Pages/Log
+server/bin/*
