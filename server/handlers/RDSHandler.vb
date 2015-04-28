@@ -13,8 +13,6 @@ Public Class RDSHandler
     Private Shared encryptedChallangeResults As New Hashtable
     Private Shared userLaunchTimestamps As New Hashtable
 
-    
-
     Private mPacket As RADIUSPacket
     Private mUsername As String
     Private mPassword As String
@@ -65,7 +63,6 @@ Public Class RDSHandler
         Else
             ProcessAccessRequest()
         End If
-
     End Sub
 
     ' Process the RDS specific App Launch request.
@@ -111,7 +108,6 @@ Public Class RDSHandler
             sessionTimestamps.Remove(mUsername)
             mPacket.RejectAccessRequest()
         End If
-
     End Sub
 
     Public Shared Function HasValidLaunchWindow(username) As Boolean
@@ -145,9 +141,6 @@ Public Class RDSHandler
     ' * valid app launch window
     '
     ' The launch window is closed after this request.
-    '
-    ' TODO: Fix race-condition RD Web vs. Gateway. Don't start RDP client in RD Web 
-    ' before ensuring App Launch request was successful 
     Public Sub ProcessGatewayRequest()
         RDSFactor.AccessLog(mPacket, "Gateway Request")
 

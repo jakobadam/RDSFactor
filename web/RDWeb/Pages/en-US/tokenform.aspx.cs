@@ -17,6 +17,7 @@ public partial class SMSToken : System.Web.UI.Page
     //
     // Localizable Text
     //
+    public const string L_CompanyName_Text = "Work Resources";
     public const string L_SmsToken_Text = "Enter SMS Token:";
     public const string L_LogonFailureLabel_Text = "The user name or password that you entered is not valid. Try typing it again.";
     public const string L_SubmitLabel_Text = "Submit";
