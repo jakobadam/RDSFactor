@@ -15,7 +15,7 @@ Public Class RDSFactor
     Public Shared ADField As String = ""
     Public Shared ADMailField As String = ""
     Public Shared EnableOTP As Boolean
-    Public Shared secrets As NASAuthList
+    Public Shared secrets As New NASAuthList
 
     Public Shared SessionTimeOut As Integer = 30 ' in minutes
     Public Shared LaunchTimeOut As Integer = 30 ' in seconds
@@ -57,13 +57,6 @@ Public Class RDSFactor
     End Sub
 
     Public Sub StartUpServer()
-        secrets = New NASAuthList
-
-        For Each cl As DictionaryEntry In clientHash
-            ServerLog("Adding Shared Secrets to Radius Server")
-            secrets.AddSharedSecret(cl.Key, cl.Value)
-        Next
-
         Try
             server = New RADIUSServer(serverPort, AddressOf ProcessPacket, secrets)
             ServerLog("Starting Radius Server on Port " & serverPort & " ...OK")
@@ -194,15 +187,10 @@ Public Class RDSFactor
 
             End If
 
-            Dim ClientList As String = ""
-            ClientList = RConfig.GetKeyValue("RDSFactor", "ClientList")
-
-            Dim ClientArray() As String
-            ClientArray = Split(ClientList, ",")
-
-            For i As Integer = 0 To ClientArray.Length - 1
-                ServerLog("Loading Shared Secret for Client: " & ClientArray(i))
-                clientHash.Add(ClientArray(i), RConfig.GetKeyValue("Clients", ClientArray(i)))
+            For Each client In RConfig.GetSection("clients").Keys
+                Dim address = client.Name
+                ServerLog("Adding Shared Secret for: " & address)
+                secrets.AddSharedSecret(address, client.Value)
             Next
 
             If ConfOk = True Then
