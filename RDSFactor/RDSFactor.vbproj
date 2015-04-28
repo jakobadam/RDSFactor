@@ -79,7 +79,6 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Crypto.vb" />
     <Compile Include="exceptions\MissingRadiusSecret.vb" />
     <Compile Include="exceptions\MissingUser.vb" />
     <Compile Include="handlers\RDSHandler.vb" />

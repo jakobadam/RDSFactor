@@ -206,7 +206,7 @@ Public Class RDSFactor
 
             For i As Integer = 0 To ClientArray.Length - 1
                 ServerLog("Loading Shared Secret for Client: " & ClientArray(i))
-                clientHash.Add(ClientArray(i), EncDec.Decrypt(RConfig.GetKeyValue("Clients", ClientArray(i)), "gewsyy#sjs2!"))
+                clientHash.Add(ClientArray(i), RConfig.GetKeyValue("Clients", ClientArray(i)))
             Next
 
             If ConfOk = True Then
