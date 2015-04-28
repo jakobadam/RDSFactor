@@ -42,6 +42,11 @@ After install go and configure the server. Open the file RDSFactor/server/bin/re
 
 Note that the client should be the IP of RD Web, and the shared secret must match the value of RadiusSecret in the IIS.  
 
+To reload the configuration restart the RADIUS server service by running
+```
+$ restart-server.bat
+```
+
 ## Acknowledgements
 
 * Claus Isager - for the proof of concept two factor RDS authentication 
