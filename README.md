@@ -1,19 +1,23 @@
-# RDSFactor
+# RDS Factor
 
-Two-factor authentication for Remote Desktop Services (RDS)
+Two-factor authentication for Remote Desktop Services (RDS).
 
-http://www.isager.dk/is/CICRadarR/SMStokenforWindows2012RDGateway.aspx
+RDS Factor consist of two components:
+* A server component that talks RADIUS with RD Web and the RD Gateway
+* An updated version of the RD Web pages that interacts with the RADIUS server and ask users to enter one-time passwords sent to their phone before letting them in.
+
+Tested on Windows 2012 R2.
 
 ## Prerequisites
 
-An RDS setup. The minimal RDS setup for use with RDSFactor consist of two servers: 
+An RDS setup. There are many options for orchestrating the RDS setup; the minimal RDS setup for use with RDS Factor consist of two servers: 
 * Active Directory; and
 * RDS with Gateway component enabled
 
 ## Installation
 
-### RDWeb update
-RDSfactor comes with a customized version of the RDWeb pages. To install these run:
+### RD Web update
+RDS factor comes with a customized version of the RD Web pages. To install these run:
 
 ```
 $ install-web.bat
@@ -31,7 +35,17 @@ The RADIUS server component can be installed on any server reacheable by both th
 $ install-server.bat
 ```
 
-TODO: NPS config, Web config
+After install go and configure the server. Open the file RDSFactor/server/bin/release/conf.ini for editing. You should configure the following settings:
+* LDAPDomain (IP of server to authenticate the user against and lookup phonenumber)
+* ADField (LDAP attribute to use for looking the user's phonenumber)
+* {client}={shared secret} should be added in the clients section 
+
+Note that the client should be the IP of RD Web, and the shared secret must match the value of RadiusSecret in the IIS.  
+
+To reload the configuration restart the RADIUS server service by running
+```
+$ restart-server.bat
+```
 
 ## Acknowledgements
 
