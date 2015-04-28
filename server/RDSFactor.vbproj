@@ -97,7 +97,7 @@
     <Compile Include="exceptions\MissingRadiusSecret.vb" />
     <Compile Include="exceptions\MissingUser.vb" />
     <Compile Include="handlers\RDSHandler.vb" />
-    <Compile Include="IniFileVb.vb" />
+    <Compile Include="IniFile.vb" />
     <Compile Include="Log.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
