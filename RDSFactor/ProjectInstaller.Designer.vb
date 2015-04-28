@@ -32,9 +32,9 @@
         '
         'ServiceInstaller1
         '
-        Me.ServiceInstaller1.Description = "Radius Server for SMS Token"
-        Me.ServiceInstaller1.DisplayName = "CIC Radius Server"
-        Me.ServiceInstaller1.ServiceName = "CICRadiusR"
+        Me.ServiceInstaller1.Description = "RDSFactor Radius Server"
+        Me.ServiceInstaller1.DisplayName = "RDSFactor Radius Server"
+        Me.ServiceInstaller1.ServiceName = "RDSFactor"
         Me.ServiceInstaller1.StartType = System.ServiceProcess.ServiceStartMode.Automatic
         '
         'ProjectInstaller
