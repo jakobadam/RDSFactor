@@ -28,8 +28,8 @@ C:\RDSFactor> install-web.bat
 ```
 
 After install go and configure the application in IIS. `RDWeb -> Pages -> Application Settings`. You should configure the following settings:
-* `RadiusServer` (IP of the radius server)
-* `RadiusSecret` (Shared secret -- of your own chosing -- used for encrypting RADIUS traffic)
+* `RadiusServer` IP of the radius server
+* `RadiusSecret` Shared secret -- of your own chosing -- used for encrypting RADIUS traffic
 
 ### RADIUS server installation
 
