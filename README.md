@@ -20,6 +20,12 @@ An RDS setup. There are many options for orchestrating the RDS setup; the minima
 
 ## Installation
 
+The core RADIUS server is included in this project as a git submodule. Fetch them by:
+
+```
+git submodule update --init
+```
+
 ### RD Web update
 RDS factor comes with a customized version of the RD Web pages. To install these run:
 
