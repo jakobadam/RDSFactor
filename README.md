@@ -20,7 +20,7 @@ An RDS setup. There are many options for orchestrating the RDS setup; the minima
 
 ## Installation
 
-The core RADIUS server is included in this project as a git submodule. Fetch them by:
+The core RADIUS server is included in this project as a git submodule. Fetch it by:
 
 ```
 C:\RDSFactor> git submodule update --init
