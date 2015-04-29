@@ -23,7 +23,6 @@ Public Class RDSFactor
     Public Shared EnableEmail As Boolean = False
 
     Private Shared DEBUG As Boolean
-    Private Shared UserAccessLog As New LogWriter
     Private Shared Log As New LogWriter
 
     Private server As RADIUSServer
@@ -42,26 +41,24 @@ Public Class RDSFactor
 
     Protected Overrides Sub OnStart(ByVal args() As String)
         Log.filePath = ApplicationPath() & "\log.txt"
-        UserAccessLog.filePath = ApplicationPath() & "\UserAccessLog.txt"
-
         Log.WriteLog("---------------------------------------------------------------------------------------------------")
-        ServerLog("Starting Service")
-        ServerLog("Loading Configuration...")
+        LogInfo("Starting Service")
+        LogInfo("Loading Configuration...")
         loadConfiguration()
-        ServerLog("Starting Radius listner ports...")
+        LogInfo("Starting Radius listner ports...")
         StartUpServer()
     End Sub
 
     Protected Overrides Sub OnStop()
-        ServerLog("Stopping Radius listner ports...")
+        LogInfo("Stopping Radius listner ports...")
     End Sub
 
     Public Sub StartUpServer()
         Try
             server = New RADIUSServer(serverPort, AddressOf ProcessPacket, secrets)
-            ServerLog("Starting Radius Server on Port " & serverPort & " ...OK")
+            LogInfo("Starting Radius Server on Port " & serverPort & " ...OK")
         Catch
-            ServerLog("Starting Radius Server on Port " & serverPort & "...FAILED")
+            LogInfo("Starting Radius Server on Port " & serverPort & "...FAILED")
         End Try
     End Sub
 
@@ -84,16 +81,16 @@ Public Class RDSFactor
         handler.ProcessRequest()
     End Sub
 
-    Public Shared Sub AccessLog(packet As RADIUSPacket, message As String)
+    Public Shared Sub LogDebug(packet As RADIUSPacket, message As String)
         Dim from_address = packet.EndPoint.Address.ToString
         message = "[" & packet.UserName & " " & from_address & "] " & message
-        AccessLog(message)
+        LogDebug(message)
     End Sub
 
-    Public Shared Sub AccessLog(message As String)
+    Public Shared Sub LogDebug(message As String)
         message = Now & ": DEBUG: " & message
         If DEBUG = True Then
-            UserAccessLog.WriteLog(message)
+            Log.WriteLog(message)
 
             ' Also write to the console if not a service
             If Environment.UserInteractive Then
@@ -102,8 +99,8 @@ Public Class RDSFactor
         End If
     End Sub
 
-    Public Shared Sub ServerLog(ByVal message)
-        message = Now & ": " & message
+    Public Shared Sub LogInfo(ByVal message)
+        message = Now & ": INFO: " & message
         Log.WriteLog(message)
         ' Also write to the console if not a service
         If Environment.UserInteractive Then
@@ -136,7 +133,7 @@ Public Class RDSFactor
 
             LDAPDomain = RConfig.GetKeyValue("RDSFactor", "LDAPDomain")
             If LDAPDomain.Length = 0 Then
-                ServerLog("ERROR: LDAPDomain can not be empty")
+                LogInfo("ERROR: LDAPDomain can not be empty")
                 ConfOk = False
             End If
 
@@ -154,7 +151,7 @@ Public Class RDSFactor
 
                 ADField = RConfig.GetKeyValue("RDSFactor", "ADField")
                 If ADField.Length = 0 Then
-                    ServerLog("ERROR:  ADField can not be empty")
+                    LogInfo("ERROR:  ADField can not be empty")
                     ConfOk = False
                 End If
 
@@ -165,22 +162,22 @@ Public Class RDSFactor
                         Case "0"
                             Provider = RConfig.GetKeyValue("RDSFactor", "Provider")
                             If Provider.Length = 0 Then
-                                ServerLog("ERROR:  Provider can not be empty")
+                                LogInfo("ERROR:  Provider can not be empty")
                                 ConfOk = False
                             End If
                         Case "1"
                             ComPort = RConfig.GetKeyValue("RDSFactor", "COMPORT")
                             If ComPort.Length = 0 Then
-                                ServerLog("ERROR:  ComPort can not be empty")
+                                LogInfo("ERROR:  ComPort can not be empty")
                                 ConfOk = False
                             End If
                             SmsC = RConfig.GetKeyValue("RDSFactor", "SMSC")
                             If SmsC.Length = 0 Then
-                                ServerLog("ERROR:  SMSC can not be empty. See http://smsclist.com/downloads/default.txt for valid values")
+                                LogInfo("ERROR:  SMSC can not be empty. See http://smsclist.com/downloads/default.txt for valid values")
                                 ConfOk = False
                             End If
                         Case Else
-                            ServerLog("ERROR:  USELOCALMODEM contain invalid configuration. Correct value are 1 or 0")
+                            LogInfo("ERROR:  USELOCALMODEM contain invalid configuration. Correct value are 1 or 0")
                             ConfOk = False
                     End Select
                 End If
@@ -189,18 +186,18 @@ Public Class RDSFactor
 
             For Each client In RConfig.GetSection("clients").Keys
                 Dim address = client.Name
-                ServerLog("Adding Shared Secret for: " & address)
+                LogInfo("Adding Shared Secret for: " & address)
                 secrets.AddSharedSecret(address, client.Value)
             Next
 
             If ConfOk = True Then
-                ServerLog("Loading Configuration...OK")
+                LogInfo("Loading Configuration...OK")
             Else
-                ServerLog("Loading Configuration...FAILED")
+                LogInfo("Loading Configuration...FAILED")
             End If
         Catch
-            ServerLog("ERROR: Missing RDSFactor.ini from startup path or RDSFactor.ini contains invalid configuration")
-            ServerLog("Loading Configuration...FAILED")
+            LogInfo("ERROR: Missing RDSFactor.ini from startup path or RDSFactor.ini contains invalid configuration")
+            LogInfo("Loading Configuration...FAILED")
             End
         End Try
     End Sub
@@ -271,14 +268,14 @@ Public Class RDSFactor
         Try
             smtp.Send(mail)
             If DEBUG = True Then
-                AccessLog(Now & ": Mail send to: " & email)
+                LogDebug(Now & ": Mail send to: " & email)
             End If
             Return "SEND"
         Catch e As InvalidCastException
 
             If DEBUG = True Then
-                AccessLog(Now & " : Debug: " & e.Message)
-                AccessLog(Now & " : Unable to send mail to: " & email & "  ## Check that MAILSERVER and SENDEREMAIL are configured correctly in smscode.conf. Also check that your Webinterface server is allowed to relay through the mail server specified")
+                LogDebug(Now & " : Debug: " & e.Message)
+                LogDebug(Now & " : Unable to send mail to: " & email & "  ## Check that MAILSERVER and SENDEREMAIL are configured correctly in smscode.conf. Also check that your Webinterface server is allowed to relay through the mail server specified")
             End If
             Return "FAILED"
         End Try

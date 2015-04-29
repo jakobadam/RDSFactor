@@ -76,26 +76,26 @@ Public Class RDSHandler
     ' NOTE: Requests contain the session GUID in the password attribute
     ' of the packet.
     Public Sub ProcessAppLaunchRequest()
-        RDSFactor.AccessLog(mPacket, "AppLaunchRequest")
+        RDSFactor.LogDebug(mPacket, "AppLaunchRequest")
 
         ' When the packet is an AppLaunchRequest the password attribute contains the session id!
         Dim packetSessionId = mPassword
         Dim storedSessionId = userSessions(mUsername)
 
         If storedSessionId = Nothing Then
-            RDSFactor.AccessLog(mPacket, "User has no session. MUST re-authenticate!")
+            RDSFactor.LogDebug(mPacket, "User has no session. MUST re-authenticate!")
             mPacket.RejectAccessRequest()
             Exit Sub
         End If
 
         If Not storedSessionId = packetSessionId Then
-            RDSFactor.AccessLog(mPacket, "Stored session id didn't match packet session id!")
+            RDSFactor.LogDebug(mPacket, "Stored session id didn't match packet session id!")
             mPacket.RejectAccessRequest()
             Exit Sub
         End If
 
         If HasValidSession(mUsername) Then
-            RDSFactor.AccessLog(mPacket, "Opening window")
+            RDSFactor.LogDebug(mPacket, "Opening window")
             ' Pro-long user session
             sessionTimestamps(mUsername) = Now
             ' Open gateway connection window
@@ -103,7 +103,7 @@ Public Class RDSHandler
             mPacket.AcceptAccessRequest()
             Exit Sub
         Else
-            RDSFactor.AccessLog(mPacket, "Session timed out -- User MUST re-authenticate")
+            RDSFactor.LogDebug(mPacket, "Session timed out -- User MUST re-authenticate")
             userSessions.Remove(mUsername)
             sessionTimestamps.Remove(mUsername)
             mPacket.RejectAccessRequest()
@@ -142,14 +142,14 @@ Public Class RDSHandler
     '
     ' The launch window is closed after this request.
     Public Sub ProcessGatewayRequest()
-        RDSFactor.AccessLog(mPacket, "Gateway Request")
+        RDSFactor.LogDebug(mPacket, "Gateway Request")
 
         Dim sessionId = userSessions(mUsername)
         Dim launchTimestamp = userLaunchTimestamps(mUsername)
         Dim attributes As New RADIUSAttributes
 
         If sessionId = Nothing Or launchTimestamp = Nothing Then
-            RDSFactor.AccessLog(mPacket, "User's has no launch window. User must re-authenticate")
+            RDSFactor.LogDebug(mPacket, "User's has no launch window. User must re-authenticate")
             mPacket.RejectAccessRequest()
             Exit Sub
         End If
@@ -161,14 +161,14 @@ Public Class RDSHandler
         End If
 
         If HasValidLaunchWindow(mUsername) Then
-            RDSFactor.AccessLog(mPacket, "Opening gateway launch window")
+            RDSFactor.LogDebug(mPacket, "Opening gateway launch window")
             mPacket.AcceptAccessRequest(attributes)
         Else
-            RDSFactor.AccessLog(mPacket, "Gateway launch window has timed out!")
+            RDSFactor.LogDebug(mPacket, "Gateway launch window has timed out!")
             mPacket.RejectAccessRequest()
         End If
 
-        RDSFactor.AccessLog(mPacket, "Removing gateway launch window")
+        RDSFactor.LogDebug(mPacket, "Removing gateway launch window")
         userLaunchTimestamps.Remove(mUsername)
     End Sub
 
@@ -180,7 +180,7 @@ Public Class RDSHandler
             Exit Sub
         End If
 
-        RDSFactor.AccessLog(mPacket, "AccessRequest")
+        RDSFactor.LogDebug(mPacket, "AccessRequest")
         Try
             Dim ldapResult = Authenticate()
 
@@ -191,13 +191,13 @@ Public Class RDSHandler
                 Accept()
             End If
         Catch ex As Exception
-            RDSFactor.AccessLog(mPacket, "Authentication failed. Sending reject. Error: " & ex.Message)
+            RDSFactor.LogDebug(mPacket, "Authentication failed. Sending reject. Error: " & ex.Message)
             mPacket.RejectAccessRequest()
         End Try
     End Sub
 
     Private Sub Accept()
-        RDSFactor.AccessLog(mPacket, "AcceptAccessRequest")
+        RDSFactor.LogDebug(mPacket, "AcceptAccessRequest")
         Dim sGUID As String = System.Guid.NewGuid.ToString()
         userSessions(mUsername) = sGUID
         sessionTimestamps(mUsername) = Now
@@ -220,12 +220,12 @@ Public Class RDSHandler
         Dim localEncryptedResult = encryptedChallangeResults(mUsername)
 
         If localEncryptedResult = userEncryptedResult Then
-            RDSFactor.AccessLog(mPacket, "ChallengeResponse Success")
+            RDSFactor.LogDebug(mPacket, "ChallengeResponse Success")
             encryptedChallangeResults.Remove(mUsername)
             authTokens.Remove(mUsername)
             Accept()
         Else
-            RDSFactor.AccessLog(mPacket, "Wrong challange code!")
+            RDSFactor.LogDebug(mPacket, "Wrong challange code!")
             mPacket.RejectAccessRequest()
         End If
     End Sub
@@ -236,7 +236,7 @@ Public Class RDSHandler
         Dim clientIP = mPacket.EndPoint.Address.ToString
         Dim sharedSecret = RDSFactor.secrets(clientIP)
 
-        RDSFactor.AccessLog(mPacket, "Access Challange Code: " & challangeCode)
+        RDSFactor.LogDebug(mPacket, "Access Challange Code: " & challangeCode)
 
         If sharedSecret = Nothing Then
             Throw New Exception("No shared secret for client:" & clientIP)
@@ -247,11 +247,11 @@ Public Class RDSHandler
         encryptedChallangeResults(mUsername) = encryptedChallangeResult
 
         If mUseSMSFactor Then
-            RDSFactor.AccessLog(mPacket, "TODO: Send SMS")
+            RDSFactor.LogDebug(mPacket, "TODO: Send SMS")
         End If
 
         If mUseEmailFactor Then
-            RDSFactor.AccessLog(mPacket, "TODO: Send Email")
+            RDSFactor.LogDebug(mPacket, "TODO: Send Email")
         End If
 
         Dim attributes As New RADIUSAttributes
@@ -269,7 +269,7 @@ Public Class RDSHandler
         Dim password As String = mPacket.UserPassword
         Dim ldapDomain As String = RDSFactor.LDAPDomain
 
-        RDSFactor.AccessLog(mPacket, "Authenticating with LDAP: " & "LDAP://" & ldapDomain)
+        RDSFactor.LogDebug(mPacket, "Authenticating with LDAP: " & "LDAP://" & ldapDomain)
         Dim dirEntry As New DirectoryEntry("LDAP://" & ldapDomain, mUsername, password)
 
         Dim obj As Object = dirEntry.NativeObject
@@ -290,7 +290,7 @@ Public Class RDSHandler
         Dim result = search.FindOne()
 
         If IsDBNull(result) Then
-            RDSFactor.AccessLog(mPacket, "Failed to authenticate with Active Directory")
+            RDSFactor.LogDebug(mPacket, "Failed to authenticate with Active Directory")
             Throw New MissingUser
         End If
 
@@ -301,7 +301,7 @@ Public Class RDSHandler
         Dim mobile = result.Properties(RDSFactor.ADField)(0)
         mobile = Replace(mobile, "+", "")
         If mobile.Trim.Length = 0 Then
-            RDSFactor.AccessLog(mPacket, "Unable to find correct phone number for user " & mUsername)
+            RDSFactor.LogDebug(mPacket, "Unable to find correct phone number for user " & mUsername)
         End If
         Return mobile
     End Function
@@ -310,13 +310,13 @@ Public Class RDSHandler
         Dim email = result.Properties(RDSFactor.ADMailField)(0)
 
         If InStr(email, "@") = 0 Then
-            RDSFactor.AccessLog(mPacket, "Unable to find correct email for user " & mUsername)
+            RDSFactor.LogDebug(mPacket, "Unable to find correct email for user " & mUsername)
         End If
         Return email
     End Function
 
     Public Shared Sub Cleanup()
-        RDSFactor.AccessLog("TimerCleanUp")
+        RDSFactor.LogDebug("TimerCleanUp")
 
         Dim users = New ArrayList(userSessions.Keys)
         For Each username In users
