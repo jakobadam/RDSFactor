@@ -185,14 +185,14 @@ Public Class RDSHandler
             Dim ldapResult = Authenticate()
 
             If RDSFactor.EnableOTP Then
-                TwoFactorChallenge()
+                TwoFactorChallenge(ldapResult)
                 Exit Sub
             Else
                 Accept()
             End If
         Catch ex As Exception
             RDSFactor.LogDebug(mPacket, "Authentication failed. Sending reject. Error: " & ex.Message)
-            mPacket.RejectAccessRequest()
+            mPacket.RejectAccessRequest(ex.Message)
         End Try
     End Sub
 
@@ -230,7 +230,7 @@ Public Class RDSHandler
         End If
     End Sub
 
-    Private Sub TwoFactorChallenge()
+    Private Sub TwoFactorChallenge(ldapResult As SearchResult)
         Dim challangeCode = RDSFactor.GenerateCode
         Dim authToken = System.Guid.NewGuid.ToString
         Dim clientIP = mPacket.EndPoint.Address.ToString
@@ -247,11 +247,13 @@ Public Class RDSHandler
         encryptedChallangeResults(mUsername) = encryptedChallangeResult
 
         If mUseSMSFactor Then
-            RDSFactor.LogDebug(mPacket, "TODO: Send SMS")
+            Dim mobile = LdapGetNumber(ldapResult)
+            RDSFactor.SendSMS(mobile, challangeCode)
         End If
 
         If mUseEmailFactor Then
-            RDSFactor.LogDebug(mPacket, "TODO: Send Email")
+            Dim email = LdapGetEmail(ldapResult)
+            RDSFactor.SendEmail(email, challangeCode)
         End If
 
         Dim attributes As New RADIUSAttributes
@@ -283,7 +285,7 @@ Public Class RDSHandler
 
         search.PropertiesToLoad.Add("distinguishedName")
         If RDSFactor.EnableOTP = True Then
-            search.PropertiesToLoad.Add(RDSFactor.ADField)
+            search.PropertiesToLoad.Add(RDSFactor.ADMobileField)
             search.PropertiesToLoad.Add(RDSFactor.ADMailField)
         End If
 
@@ -298,19 +300,26 @@ Public Class RDSHandler
     End Function
 
     Private Function LdapGetNumber(result As SearchResult) As String
-        Dim mobile = result.Properties(RDSFactor.ADField)(0)
+        If Not result.Properties.Contains(RDSFactor.ADMobileField) Then
+            Throw New MissingLdapField(RDSFactor.ADMobileField, mUsername)
+        End If
+        Dim mobile = result.Properties(RDSFactor.ADMobileField)(0)
         mobile = Replace(mobile, "+", "")
         If mobile.Trim.Length = 0 Then
             RDSFactor.LogDebug(mPacket, "Unable to find correct phone number for user " & mUsername)
+            Throw New MissingNumber(mUsername)
         End If
         Return mobile
     End Function
 
     Private Function LdapGetEmail(result As SearchResult) As String
+        If Not result.Properties.Contains(RDSFactor.ADMailField) Then
+            Throw New MissingLdapField(RDSFactor.ADMailField, mUsername)
+        End If
         Dim email = result.Properties(RDSFactor.ADMailField)(0)
-
         If InStr(email, "@") = 0 Then
             RDSFactor.LogDebug(mPacket, "Unable to find correct email for user " & mUsername)
+            Throw New MissingEmail(mUsername)
         End If
         Return email
     End Function

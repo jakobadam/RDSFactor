@@ -1,7 +1,8 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="../Site.xsl"?>
 <?xml-stylesheet type="text/css" href="../RenderFail.css"?>
-<% @Page Language="C#" Debug="false" ResponseEncoding="utf-8" ContentType="text/xml" %>
+
+<% @Page Language="C#" Debug="true" ResponseEncoding="utf-8" ContentType="text/xml" %>
 <% @Import Namespace="System " %>
 <% @Import Namespace="System.Security" %>
 <% @Import Namespace="Microsoft.TerminalServices.Publishing.Portal.FormAuthentication" %>
@@ -67,6 +68,7 @@
     public bool bSessionExpired = false;
     public string strPrivateModeTimeout = "240";
     public string strPublicModeTimeout = "20";
+    public string message;
 
     public WorkspaceInfo objWorkspaceInfo = null;
 
@@ -103,6 +105,11 @@
 
     void Page_Load(object sender, EventArgs e)
     {
+        if (Session["Message"] != null) {
+            message = (string)Session["Message"];
+            Session["Message"] = null; 
+        }
+        
         if (!Page.IsPostBack)
         {
             Session["UserPass"] = "";
@@ -343,7 +350,7 @@
     onload="onLoginPageLoad(event)" 
     onunload="onPageUnload(event)"/>
   <HTMLMainContent>
-  
+        
       <form id="FrmLogin" name="FrmLogin" action="login.aspx<%=SecurityElement.Escape(strReturnUrl)%>" method="post" onsubmit="return onLoginFormSubmit()">
 
         <input type="hidden" name="WorkSpaceID" value="<%=SecurityElement.Escape(strWorkSpaceID)%>"/>
@@ -430,6 +437,20 @@
             </td>
             </tr>
                
+            <% if (message != null){ %>
+            <tr>
+            <td>
+                <table>
+                <tr>
+                    <td height="20">&#160;</td>
+                </tr>
+                <tr>
+                    <td><span class="wrng"><%=message%></span></td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+            <% } %>      
 
     <%
     strErrorMessageRowStyle = "style=\"display:none\"";

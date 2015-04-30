@@ -60,10 +60,20 @@ public partial class SMSToken : System.Web.UI.Page
             onRadiusAccept(response);
         }
         else {
-            Session["UserPass"] = "";
-            Session["DomainUserName"] = "";
-            SafeRedirect("logoff.aspx?Error=LoginSMSFailed");
+            onRadiusReject(response);
         }
+    }
+
+    void onRadiusReject(RADIUSPacket response) {
+        if (response.Attributes.AttributeExists(RadiusAttributeType.ReplyMessage)){
+            // Why on earth did the RD Web developer(s) use a thousand different URL parameters to logoff to indicate the error
+            // message, when they could just put the message in the session
+            String message = response.Attributes.GetFirstAttribute(RadiusAttributeType.ReplyMessage).ToString();
+            Session["Message"] = message;
+        }
+        Session["UserPass"] = "";
+        Session["DomainUserName"] = "";
+        SafeRedirect("logoff.aspx");    
     }
 
     void onRadiusChallange(RADIUSPacket response){
@@ -72,7 +82,7 @@ public partial class SMSToken : System.Web.UI.Page
     }
 
     void onRadiusAccept(RADIUSPacket response){
-        string sessionGuid = response.Attributes.GetFirstAttribute(RadiusAttributeType.ReplyMessage).GetString();
+        string sessionGuid = response.Attributes.GetFirstAttribute(RadiusAttributeType.ReplyMessage).ToString();
         Session["SESSIONGUID"] = sessionGuid;
 
         HttpCookie myCookie = new HttpCookie("RadiusSessionId");
