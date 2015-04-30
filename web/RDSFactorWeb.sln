@@ -10,7 +10,8 @@ EndProject
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Pages", "http://localhost/RDWeb/Pages", "{B31FB884-C42E-417D-AF0D-409FE7D30351}"
 	ProjectSection(WebsiteProperties) = preProject
 		UseIISExpress = "false"
-		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.5"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.5.1"
+		ProjectReferences = "{3ab08a4e-c4fa-4571-a5d4-32bba807c31d}|RADAR.dll;"
 		Debug.AspNetCompiler.VirtualPath = "/Pages"
 		Debug.AspNetCompiler.PhysicalPath = "RDWeb\Pages\"
 		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\Pages\"
@@ -26,6 +27,10 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Pages", "http://localhost/R
 		Release.AspNetCompiler.FixedNames = "false"
 		Release.AspNetCompiler.Debug = "False"
 		SlnRelativePath = "RDWeb\Pages\"
+	EndProjectSection
+	ProjectSection(ProjectDependencies) = postProject
+		{04C6C533-9FEA-41B2-B554-A166C7C7FE32} = {04C6C533-9FEA-41B2-B554-A166C7C7FE32}
+		{3AB08A4E-C4FA-4571-A5D4-32BBA807C31D} = {3AB08A4E-C4FA-4571-A5D4-32BBA807C31D}
 	EndProjectSection
 EndProject
 Global

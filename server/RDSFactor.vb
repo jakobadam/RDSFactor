@@ -7,12 +7,14 @@ Imports System.Security.Cryptography
 Imports System.Text
 Imports System
 Imports System.Net.Mail
+Imports System.Net.Http
+Imports System.Web
 Imports RADAR
 
 Public Class RDSFactor
 
     Public Shared LDAPDomain As String = ""
-    Public Shared ADField As String = ""
+    Public Shared ADMobileField As String = ""
     Public Shared ADMailField As String = ""
     Public Shared EnableOTP As Boolean
     Public Shared secrets As New NASAuthList
@@ -149,8 +151,8 @@ Public Class RDSFactor
                     ADMailField = RConfig.GetKeyValue("RDSFactor", "ADMailField")
                 End If
 
-                ADField = RConfig.GetKeyValue("RDSFactor", "ADField")
-                If ADField.Length = 0 Then
+                ADMobileField = RConfig.GetKeyValue("RDSFactor", "ADField")
+                If ADMobileField.Length = 0 Then
                     LogInfo("ERROR:  ADField can not be empty")
                     ConfOk = False
                 End If
@@ -217,40 +219,31 @@ Public Class RDSFactor
             modem = Nothing
             Return "Ok"
         Else
+            LogDebug("Sending OTP: " & passcode & " to: " & number)
 
+            ' TODO: Use HttpUtility UrlEncode when
+            ' we figure out how to add the dll!!!
+            Dim url As String = Provider
+            url = url.Replace("***TEXTMESSAGE***", passcode)
+            url = url.Replace("***NUMBER***", number)
 
-            Dim baseurl As String = Provider.Split("?")(0)
-            Dim client As New System.Net.WebClient()
-            ' Add a user agent header in case the requested URI contains a query.
+            Dim client As New HttpClient
 
-            client.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR1.0.3705;)")
+            Dim response = client.GetAsync(url).Result
+            Dim content = response.Content.ReadAsStringAsync().Result
 
-            Dim parameters As String = Provider.Split("?")(1)
-            Dim pary As String() = parameters.Split("&")
+            If response.IsSuccessStatusCode Then
 
-            For i As Integer = 0 To pary.Length - 1
-                If pary(i).IndexOf("***TEXTMESSAGE***") > 0 Then
-                    Dim qpar As String() = pary(i).Split("=")
-                    client.QueryString.Add(qpar(0), passcode)
-                ElseIf pary(i).IndexOf("***NUMBER***") > 0 Then
-                    Dim qpar As String() = pary(i).Split("=")
-                    client.QueryString.Add(qpar(0), number)
-                Else
-
-                    Dim qpar As String() = pary(i).Split("=")
-                    client.QueryString.Add(qpar(0), qpar(1))
+                If Not url.IndexOf("cpsms.dk") = -1 Then
+                    ' NOTE: Yes cpsms does indeed return HTTP 200 on errors!?!
+                    If Not content.IndexOf("error") = -1 Then
+                        Throw New SMSSendException(content)
+                    End If
                 End If
-            Next
-
-
-            Dim data As Stream = client.OpenRead(baseurl)
-            Dim reader As New StreamReader(data)
-            Dim s As String = reader.ReadToEnd()
-            data.Close()
-            reader.Close()
-            Return (s)
+            Else
+                Throw New SMSSendException(content)
+            End If
         End If
-
     End Function
 
     Public Shared Function SendEmail(email As String, passcode As String) As String
