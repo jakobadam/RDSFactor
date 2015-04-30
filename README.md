@@ -18,6 +18,8 @@ An RDS setup. There are many options for orchestrating the RDS setup; the minima
 * Active Directory; and
 * RDS with Gateway component enabled
 
+Use 'Active Directory Users and Computers' to add a mobile number to relevant LDAP users in the Active Directory. The tools is not installed pr. default. It's located under `Add Roles -> Features -> Remote Server Administration Tools -> AD DS Tools -> AD DS Snap-Ins And Command-Line Tools`
+
 ## Installation
 
 The core RADIUS server is included in this project as a git submodule. Fetch it by:
