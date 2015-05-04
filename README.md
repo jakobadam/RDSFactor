@@ -8,7 +8,7 @@ RDS Factor consist of two components:
 
 RDS Factor works by sending an SMS to users -- after they authenticate with username / password -- which when entered allow them entrance to RD Web. When users click on an applicaiton in RD Web a window is opened in the gateway for that user. In that way, users that are not authenticated via RD Web can't get access through RD Gateway. Compare this to the standard RDS setup, where there is no way to share state between RD Web and RD Gateway, meaning that the gateway is always open for user / password only authentication.
 
-It is also possible to disable two factor authentication in RDS Factor. In this case, RDS Factor still maintains state between RD Web and RD Gateway, ensuring that users have logged into RD Web before connections are allowed through the gateway. That means custom multi-factor authenticators can be put in front of RD Web and also protect the gateway.
+It is also possible to disable two factor authentication in RDS Factor. In this case, RDS Factor still maintains state between RD Web and RD Gateway, ensuring that users *must* have logged into RD Web before connections are allowed through the gateway. That means custom multi-factor authenticators can be put in front of RD Web and also protect the gateway.
 
 Tested on Windows 2012 R2.
 
