@@ -50,6 +50,7 @@ C:\RDSFactor> install-server.bat
 After install go and configure the server. Open the file `RDSFactor/server/bin/release/conf.ini` for editing. You should configure the following settings:
 * `LDAPDomain` IP of LDAP server to authenticate user and lookup phonenumber against 
 * `ADField` LDAP attribute to use for looking up the user's phonenumber
+* `EnableOTP` Boolean (0|1) that indicates whether to use the 2. factor for auth
 * `Debug` Enable debug output to  `RDSFactor/server/bin/release/log.txt`
 * `{client}={shared secret}` IP of RD Web and shared secret -- same as `RadiusSecret`-- for encryption
 * `Provider` URL of SMS provider. RDS Factor inserts the number and a message in the two variable, `***NUMBER***` and `***TEXTMESSAGE***`, in the provider URL. An example URL using the SMS gateway cpsms: https://www.cpsms.dk/sms/?username=myuser&password=mypassword&recipient=***NUMBER***&message=***TEXTMESSAGE***&from=CPSMS
