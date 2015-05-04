@@ -59,6 +59,18 @@ To reload the configuration restart the RADIUS server service by running
 C:\RDSFactor> restart-server.bat
 ```
 
+## Logging
+
+Log output from the RADAR client in RD Web is output into:
+```
+C:\RDSFactor\web\RDWeb\Pages\log> Radius_Debug.txt
+```
+
+Log output from the RADAR server:
+```
+C:\RDSFactor\server\bin\Release> log.txt
+```
+
 ## Acknowledgements
 
 * Claus Isager - for the first Open Source two factor RDS authenticator; which this project is based upon.
