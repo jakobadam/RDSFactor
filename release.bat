@@ -2,6 +2,7 @@
 :: Create release 
 
 rd /s /q release
+del /q rdsfactor.zip
 mkdir release
 
 xcopy /E server\bin\Release release\server\bin\Release\
