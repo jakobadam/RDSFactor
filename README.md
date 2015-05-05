@@ -14,7 +14,7 @@ application in RD Web opens a window in the gateway for that user. In
 that way, users that are not authenticated via RD Web cannot access
 the RD Gateway. Compare this to the standard RDS setup, where there is
 no way to share state between RD Web and RD Gateway, meaning that the
-gateway is always allows logging in the credentials.
+gateway is always open for logging in with credentials.
 
 You can also disable two-factor authentication in RDS Factor. In this
 case, RDS Factor maintains state between RD Web and RD Gateway,
