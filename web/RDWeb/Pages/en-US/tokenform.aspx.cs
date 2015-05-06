@@ -14,6 +14,9 @@ public partial class SMSToken : System.Web.UI.Page
     String radiusServer; 
     String radiusSecret;
 
+    String username;
+    String password;
+
     //
     // Localizable Text
     //
@@ -64,6 +67,13 @@ public partial class SMSToken : System.Web.UI.Page
         }
     }
 
+    void logoff() {
+        Session["UserPass"] = null;
+        Session["DomainUserName"] = null;
+        SafeRedirect("logoff.aspx");
+        Response.End();
+    }
+
     void onRadiusReject(RADIUSPacket response) {
         if (response.Attributes.AttributeExists(RadiusAttributeType.ReplyMessage)){
             // Why on earth did the RD Web developer(s) use a thousand different URL parameters to logoff to indicate the error
@@ -71,9 +81,7 @@ public partial class SMSToken : System.Web.UI.Page
             String message = response.Attributes.GetFirstAttribute(RadiusAttributeType.ReplyMessage).ToString();
             Session["Message"] = message;
         }
-        Session["UserPass"] = "";
-        Session["DomainUserName"] = "";
-        SafeRedirect("logoff.aspx");    
+        logoff();
     }
 
     void onRadiusChallange(RADIUSPacket response){
@@ -153,8 +161,19 @@ public partial class SMSToken : System.Web.UI.Page
             sHelpSourceServer = "http://go.microsoft.com/fwlink/?LinkId=141038";
         }
     }
+    
+    void login_required(){
+        username = (string)Session["DomainUserName"];
+        password = (string)Session["UserPass"];
+
+        if(username == null || username == "" || password == null || password == ""){
+            logoff();
+        }
+    }
 
     void Page_Load(object sender, EventArgs e){
+        login_required();
+
         btnSignIn.Text = L_SubmitLabel_Text;
         btnCancel.Text = L_CancelLabel_Text;
 
@@ -162,23 +181,23 @@ public partial class SMSToken : System.Web.UI.Page
             return;
         }
 
-        String username = (string)Session["DomainUserName"];
-        String password = (string)Session["UserPass"];
-        deliveryLabel.Text = (string)Session["Delivery"];
+        String deliveryMethod = (string)Session["Delivery"];
 
-        RADIUSClient client = new RADIUSClient(radiusServer, 1812, radiusSecret);
         RADIUSAttributes atts = new RADIUSAttributes();
-        try{
-            VendorSpecificAttribute vsa = new VendorSpecificAttribute(VendorSpecificType.Generic, (string)Session["Delivery"]);
+        if (deliveryMethod != null){
+            deliveryLabel.Text = deliveryMethod;
+            VendorSpecificAttribute vsa = new VendorSpecificAttribute(VendorSpecificType.Generic, deliveryMethod);
             vsa.SetRADIUSAttribute(ref atts);
-            RADIUSPacket response = client.Authenticate(username, password, atts);
-            onRadiusResponse(response);
         }
-        catch (Exception ex){
-            Session["UserPass"] = "";
-            Session["DomainUserName"] = "";
+        
+        RADIUSClient client = new RADIUSClient(radiusServer, 1812, radiusSecret);
+        RADIUSPacket response = client.Authenticate(username, password, atts);
 
-            SafeRedirect("logoff.aspx?Error=LoginRadiusFailed");
+        if (response == null) {
+            Session["Message"] = "No response from RADIUS server";
+            logoff();
         }
+        
+        onRadiusResponse(response);
     }    
 }
