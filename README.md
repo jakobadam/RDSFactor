@@ -91,7 +91,7 @@ Here you must:
 
 Log output from the RADAR client in RD Web is output into:
 ```
-C:\RDSFactor\web\RDWeb\Pages\log> Radius_Debug.txt
+C:\RDSFactor\web\RDWeb\Pages\log> radius_client.txt
 ```
 
 Log output from the RADAR server:
