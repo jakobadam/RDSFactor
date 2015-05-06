@@ -3,7 +3,7 @@
 *.Cache
 _pages_old
 obj
-web/RDWeb/Pages/Log
+web/RDWeb/Pages/Log/radius_client.txt
 server/bin/*
-web/pagkages
-/*
+web/pagkages/*
+
