@@ -21,6 +21,7 @@ Public Class RDSFactor
 
     Public Shared SessionTimeOut As Integer = 30 ' in minutes
     Public Shared LaunchTimeOut As Integer = 30 ' in seconds
+    Public Shared garbageCollectionInterval As Integer = 60 * 60 * 1000 ' in millis
     Public Shared EnableSMS As Boolean = False
     Public Shared EnableEmail As Boolean = False
 

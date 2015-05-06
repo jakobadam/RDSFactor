@@ -55,7 +55,7 @@ Partial Class RDSFactor
         'cleanupEvent
         '
         Me.cleanupEvent.Enabled = True
-        Me.cleanupEvent.Interval = 60000.0R
+        Me.cleanupEvent.Interval = garbageCollectionInterval
         '
         'RDSFactor
         '
