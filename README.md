@@ -77,11 +77,21 @@ To reload the configuration restart the RADIUS server service by running
 C:\RDSFactor> restart-server.bat
 ```
 
+### Configure RD Gateway
+
+The gateway must be configured to talk to the RADIUS RDSFactor server. Open up the 'Remote Desktop Manager' and
+`Right Click on RDS -> Properties -> RD CAP Store`. 
+
+Here you must:
+* Check 'Request clients to send statement of health' 
+* Check 'Central Server running NPS'
+* Enter the name or IP of the server running the RDSFactor server and add the shared secret
+
 ## Logging
 
 Log output from the RADAR client in RD Web is output into:
 ```
-C:\RDSFactor\web\RDWeb\Pages\log> Radius_Debug.txt
+C:\RDSFactor\web\RDWeb\Pages\log> radius_client.txt
 ```
 
 Log output from the RADAR server:
