@@ -208,7 +208,7 @@ Public Class RDSFactor
         Return Path.GetDirectoryName([Assembly].GetExecutingAssembly().Location)
     End Function
 
-    Public Shared Function SendSMS(ByVal number As String, ByVal passcode As String) As String
+    Public Shared Sub SendSMS(ByVal number As String, ByVal passcode As String)
 
         ' test if using online sms provider or local modem
         If ModemType = 1 Then ' local modem
@@ -217,7 +217,6 @@ Public Class RDSFactor
             modem.send(number, passcode, SmsC)
             modem.Closes()
             modem = Nothing
-            Return "Ok"
         Else
             LogDebug("Sending OTP: " & passcode & " to: " & number)
 
@@ -244,7 +243,7 @@ Public Class RDSFactor
                 Throw New SMSSendException(content)
             End If
         End If
-    End Function
+    End Sub
 
     Public Shared Function SendEmail(email As String, passcode As String) As String
 
