@@ -38,11 +38,7 @@ Command-Line Tools`
 
 ## Installation
 
-The core RADIUS server is included in this project as a git submodule. Fetch it by:
-
-```
-C:\RDSFactor> git submodule update --init
-```
+Grap the latest `rdsfactor.zip` release from github. And unzip it.
 
 ### RD Web update
 RDS factor comes with a customized version of the RD Web pages. To install these run:
@@ -98,6 +94,16 @@ Log output from the RADAR server:
 ```
 C:\RDSFactor\server\bin\Release> log.txt
 ```
+
+## Hacking on RDS Factor
+
+The core RADIUS server is included in this project as a git submodule. Fetch it by:
+
+```
+C:\RDSFactor> git submodule update --init
+```
+
+Open the RDSFactorWeb project in Visual Studio.
 
 ## Acknowledgements
 
