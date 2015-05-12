@@ -1,6 +1,6 @@
 # RDS Factor
 
-Two-factor authentication for Remote Desktop Services (RDS).
+Two-factor authentication for Windows 2012 R2 Remote Desktop Services (RDS).
 
 RDS Factor consist of two components:
 * A server component that talks RADIUS with RD Web and the RD Gateway.
