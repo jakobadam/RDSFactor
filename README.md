@@ -83,6 +83,10 @@ Here you must:
 * Check 'Central Server running NPS'
 * Enter the name or IP of the server running the RDSFactor server and add the shared secret
 
+The Network Policy server on the RD Gateway should now proxy RADIUS requests to RDSFactor. You can check the setup of the NPS server by running the 'Network Policy Server' application on the gateway. 
+
+We have experienced that the 'TS GATEWAY AUTHORIZATION POLICY' blocks requests due to the condition of that policy. The fix is relax the requirements of the NAS port type. We have: Virtual (VPN), Ethernet or Cable.
+
 ## Logging
 
 Log output from the RADAR client in RD Web is output into:
@@ -95,6 +99,15 @@ Log output from the RADAR server:
 C:\RDSFactor\server\bin\Release> log.txt
 ```
 
+The RD Gateway log:
+```
+Event Viewer: Applications and Services Logs / Microsoft / Windows / TerminalServices-Gateway / Operational
+```
+
+The Network Policy Server log:
+```
+Event Viewer: Custom Views / ServerRoles / Network Policy and Access Services
+```
 ## Hacking on RDS Factor
 
 The core RADIUS server is included in this project as a git submodule. Fetch it by:
