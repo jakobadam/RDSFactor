@@ -116,7 +116,9 @@ The core RADIUS server is included in this project as a git submodule. Fetch it 
 C:\RDSFactor> git submodule update --init
 ```
 
-Open the RDSFactorWeb project in Visual Studio.
+Open the RDSFactorWeb project in Visual Studio. 
+
+You run the debugger by attaching it (Ctrl-Alt-P) to the IIS process, check 'show processes from all users', select `w3wp.exe`.
 
 ## Acknowledgements
 
