@@ -24,6 +24,9 @@ authenticators in front of RD Web to also protect the gateway.
 
 Tested on Windows 2012 R2.
 
+Here is a diagram of an example RDS architecture to ease understanding:
+![Architecture](architecture.png)
+
 ## Prerequisites
 
 An RDS setup. There are many options for orchestrating the RDS setup; the minimal RDS setup for use with RDS Factor consist of two servers: 
