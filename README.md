@@ -33,6 +33,10 @@ An RDS setup. There are many options for orchestrating the RDS setup; the minima
 * Active Directory; and
 * RDS with Gateway component enabled
 
+A more usefull setup is given in the diagram above. 
+
+When using mobile as second factor RDSFactor looks up the number of the user in the Active Directory.
+
 Use 'Active Directory Users and Computers' to add a mobile number to
 relevant LDAP users in the Active Directory. The tool is not installed
 per default; you can find it in `Add Roles -> Features -> Remote
