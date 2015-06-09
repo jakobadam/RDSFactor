@@ -50,13 +50,13 @@ RDS factor comes with a customized version of the RD Web pages. To install these
 C:\RDSFactor> install-web.bat
 ```
 
-After install go and configure the application in IIS. `RDWeb -> Pages -> Application Settings`. You should configure the following settings:
+After install go and configure the application in the IIS Manager. `RDWeb -> Pages -> Application Settings`. You should configure the following settings:
 * `RadiusSecret` Shared secret — of your own chosing — used for encrypting RADIUS traffic
 * `RadiusServer` IP of the radius server
 
 ### RADIUS server installation
 
-The RADIUS server component can be installed on any server reacheable by both the RD Web and the RD Gateway. To install the server as a service run:
+The RADIUS server component can be installed on any server reacheable by both the RD Web and the RD Gateway. Here I'm installing it on the same server running RD Web. To install the server as a service run:
 
 ```
 C:\RDSFactor> install-server.bat
@@ -65,10 +65,10 @@ C:\RDSFactor> install-server.bat
 After install go and configure the server. Open the file `RDSFactor/server/bin/release/conf.ini` for editing. You should configure the following settings:
 * `LDAPDomain` IP of LDAP server to authenticate user and lookup phonenumber against 
 * `ADField` LDAP attribute to use for looking up the user's phonenumber
-* `EnableOTP` Boolean (0|1) that indicates whether to use the 2. factor for auth
+* `EnableOTP` Boolean (0|1) that indicates whether to use the two-factor for auth
 * `Debug` Enable debug output to  `RDSFactor/server/bin/release/log.txt`
-* `{client}={shared secret}` IP of RD Web and shared secret — same as
-  `RadiusSecret` — for encryption
+* `{client}={shared secret}` IP of RADIUS client and shared secret — same as
+  `RadiusSecret` — for encryption. You should add a line for each RADIUS client: RD Web, RD Gateway etc.
 * `Provider` URL of SMS provider. RDS Factor inserts the number and a message in the two variable, `***NUMBER***` and `***TEXTMESSAGE***`, in the provider URL. An example URL using the SMS gateway cpsms: https://www.cpsms.dk/sms/?username=myuser&password=mypassword&recipient=***NUMBER***&message=***TEXTMESSAGE***&from=CPSMS
 
 To reload the configuration restart the RADIUS server service by running
