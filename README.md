@@ -44,7 +44,7 @@ Command-Line Tools`
 Grap the latest [rdsfactor.zip](https://github.com/jakobadam/RDSFactor/releases/latest) release from github. And unzip it.
 
 ### RD Web update
-RDS factor comes with a customized version of the RD Web pages. To install these run:
+RDS factor comes with a customized version of the RD Web pages. To install these, in an terminal running with administrative rights, run:
 
 ```
 C:\RDSFactor> install-web.bat
