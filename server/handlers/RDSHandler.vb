@@ -149,7 +149,7 @@ Public Class RDSHandler
         Dim attributes As New RADIUSAttributes
 
         If sessionId = Nothing Or launchTimestamp = Nothing Then
-            RDSFactor.LogDebug(mPacket, "User's has no launch window. User must re-authenticate")
+            RDSFactor.LogDebug(mPacket, "User has no launch window. User must re-authenticate")
             mPacket.RejectAccessRequest()
             Exit Sub
         End If
