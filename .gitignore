@@ -1,4 +1,5 @@
 *.suo
+*.user
 *.TMP
 *.Cache
 _pages_old
