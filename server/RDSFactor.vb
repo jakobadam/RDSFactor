@@ -253,7 +253,7 @@ Public Class RDSFactor
         mail.To.Add(email)
         mail.From = New MailAddress(SenderEmail)
         mail.Subject = "Token: " & passcode
-        mail.Body = "Subject contains the token code to login to you site"
+        mail.Body = "Subject contains the token code to login to the site"
         mail.IsBodyHtml = False
         Dim smtp As New SmtpClient(MailServer)
 
@@ -261,7 +261,7 @@ Public Class RDSFactor
         Try
             smtp.Send(mail)
             If DEBUG = True Then
-                LogDebug(Now & ": Mail send to: " & email)
+                LogDebug(Now & ": Mail sent to: " & email)
             End If
             Return "SEND"
         Catch e As InvalidCastException
