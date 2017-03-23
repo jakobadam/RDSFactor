@@ -1,3 +1,7 @@
+*Notice*
+I no longer maintain this. This fork might be maintainted.
+https://github.com/oskarb/RDSFactor
+
 # RDS Factor
 
 Two-factor authentication for Windows 2012 R2 Remote Desktop Services (RDS).
