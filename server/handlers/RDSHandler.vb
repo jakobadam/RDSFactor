@@ -10,7 +10,7 @@ Public Class RDSHandler
 
     Private Shared userSessions As New Hashtable
     Private Shared sessionTimestamps As New Hashtable
-    Private Shared encryptedChallangeResults As New Hashtable
+    Private Shared encryptedChallengeResults As New Hashtable
     Private Shared userLaunchTimestamps As New Hashtable
 
     Private mPacket As RADIUSPacket
@@ -149,7 +149,7 @@ Public Class RDSHandler
         Dim attributes As New RADIUSAttributes
 
         If sessionId = Nothing Or launchTimestamp = Nothing Then
-            RDSFactor.LogDebug(mPacket, "User's has no launch window. User must re-authenticate")
+            RDSFactor.LogDebug(mPacket, "User has no launch window. User must re-authenticate")
             mPacket.RejectAccessRequest()
             Exit Sub
         End If
@@ -175,7 +175,7 @@ Public Class RDSHandler
     Public Sub ProcessAccessRequest()
         Dim hasState = mPacket.Attributes.AttributeExists(RadiusAttributeType.State)
         If hasState Then
-            ' An Access-Request with a state is pr. definition a challange response.
+            ' An Access-Request with a state is pr. definition a challenge response.
             ProcessChallengeResponse()
             Exit Sub
         End If
@@ -212,48 +212,48 @@ Public Class RDSHandler
     Private Sub ProcessChallengeResponse()
         Dim authToken = mPacket.Attributes.GetFirstAttribute(RadiusAttributeType.State).ToString
         If Not authToken = authTokens(mUsername) Then
-            Throw New Exception("User is trying to respond to challange without valid auth token")
+            Throw New Exception("User is trying to respond to challenge without valid auth token")
         End If
 
-        ' When the packet is an Challange-Response the password attr. contains the encrypted result
+        ' When the packet is an Challenge-Response the password attr. contains the encrypted result
         Dim userEncryptedResult = mPassword
-        Dim localEncryptedResult = encryptedChallangeResults(mUsername)
+        Dim localEncryptedResult = encryptedChallengeResults(mUsername)
 
         If localEncryptedResult = userEncryptedResult Then
             RDSFactor.LogDebug(mPacket, "ChallengeResponse Success")
-            encryptedChallangeResults.Remove(mUsername)
+            encryptedChallengeResults.Remove(mUsername)
             authTokens.Remove(mUsername)
             Accept()
         Else
-            RDSFactor.LogDebug(mPacket, "Wrong challange code!")
+            RDSFactor.LogDebug(mPacket, "Wrong challenge code!")
             mPacket.RejectAccessRequest()
         End If
     End Sub
 
     Private Sub TwoFactorChallenge(ldapResult As SearchResult)
-        Dim challangeCode = RDSFactor.GenerateCode
+        Dim challengeCode = RDSFactor.GenerateCode
         Dim authToken = System.Guid.NewGuid.ToString
         Dim clientIP = mPacket.EndPoint.Address.ToString
         Dim sharedSecret = RDSFactor.secrets(clientIP)
 
-        RDSFactor.LogDebug(mPacket, "Access Challange Code: " & challangeCode)
+        RDSFactor.LogDebug(mPacket, "Access Challenge Code: " & challengeCode)
 
         If sharedSecret = Nothing Then
             Throw New Exception("No shared secret for client:" & clientIP)
         End If
 
         authTokens(mUsername) = authToken
-        Dim encryptedChallangeResult = Crypto.SHA256(mUsername & challangeCode & sharedSecret)
-        encryptedChallangeResults(mUsername) = encryptedChallangeResult
+        Dim encryptedChallengeResult = Crypto.SHA256(mUsername & challengeCode & sharedSecret)
+        encryptedChallengeResults(mUsername) = encryptedChallengeResult
 
         If mUseSMSFactor Then
             Dim mobile = LdapGetNumber(ldapResult)
-            RDSFactor.SendSMS(mobile, challangeCode)
+            RDSFactor.SendSMS(mobile, challengeCode)
         End If
 
         If mUseEmailFactor Then
             Dim email = LdapGetEmail(ldapResult)
-            RDSFactor.SendEmail(email, challangeCode)
+            RDSFactor.SendEmail(email, challengeCode)
         End If
 
         Dim attributes As New RADIUSAttributes
@@ -333,7 +333,7 @@ Public Class RDSHandler
                 userSessions.Remove(username)
                 sessionTimestamps.Remove(username)
                 userLaunchTimestamps.Remove(username)
-                encryptedChallangeResults.Remove(username)
+                encryptedChallengeResults.Remove(username)
                 authTokens.Remove(username)
             End If
         Next

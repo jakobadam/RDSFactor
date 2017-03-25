@@ -45,8 +45,8 @@ public partial class SMSToken : System.Web.UI.Page
        
         atts.Add(state);
 
-        String encryptedChallangeResult = Crypto.SHA256(username + SmsToken.Text + radiusSecret);
-        RADIUSPacket response = client.Authenticate(username, encryptedChallangeResult, atts);
+        String encryptedChallengeResult = Crypto.SHA256(username + SmsToken.Text + radiusSecret);
+        RADIUSPacket response = client.Authenticate(username, encryptedChallengeResult, atts);
 
         onRadiusResponse(response);
     }
@@ -57,7 +57,7 @@ public partial class SMSToken : System.Web.UI.Page
 
     void onRadiusResponse(RADIUSPacket response) {
         if (response.Code == RadiusPacketCode.AccessChallenge) {
-            onRadiusChallange(response);
+            onRadiusChallenge(response);
         }
         else if (response.Code == RadiusPacketCode.AccessAccept) {
             onRadiusAccept(response);
@@ -84,7 +84,7 @@ public partial class SMSToken : System.Web.UI.Page
         logoff();
     }
 
-    void onRadiusChallange(RADIUSPacket response){
+    void onRadiusChallenge(RADIUSPacket response){
         RADIUSAttribute state = response.Attributes.GetFirstAttribute(RadiusAttributeType.State);
         Session["State"] = state;
     }
