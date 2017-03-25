@@ -5,5 +5,10 @@ _pages_old
 obj
 web/RDWeb/Pages/Log/radius_client.txt
 server/bin/*
-web/pagkages/*
 
+# Ignore Nuget packages that will be automatically restored.
+/server/packages
+/web/packages/*
+# Not sure if this file needs to be in source control or not, but it's
+# already there, so leave it for now (the server project doesn't have it).
+!/web/packages/repositories.config
